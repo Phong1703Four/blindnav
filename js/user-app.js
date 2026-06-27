@@ -94,14 +94,22 @@ const UserApp = {
     const placeholder = document.getElementById('camera-placeholder');
 
     try {
-      this.cameraStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: false
-      });
+      try {
+        this.cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          },
+          audio: false
+        });
+      } catch (err1) {
+        // Fallback to any camera if environment camera fails
+        this.cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false
+        });
+      }
 
       if (video) {
         video.srcObject = this.cameraStream;
@@ -299,66 +307,64 @@ const UserApp = {
   },
 
   // ═══════════════════════════════════════════
-  // NAVIGATION — Chỉ đường chính xác tiếng Việt
+  // NAVIGATION — Định vị GPS thật
   // ═══════════════════════════════════════════
   startNavigation() {
-    // Lộ trình cố định: Nhà → Công viên Thống Nhất
-    const route = [
-      { address: '12 Hàng Bông, Hoàn Kiếm, Hà Nội', direction: 'Bắt đầu đi. Đi thẳng trên đường Hàng Bông, hướng Đông', meters: 0 },
-      { address: 'Hàng Bông, gần ngã tư Phủ Doãn', direction: 'Tiếp tục đi thẳng 50 mét. Vỉa hè bên phải', meters: 50 },
-      { address: 'Ngã tư Hàng Bông - Phủ Doãn', direction: 'Đến ngã tư. Rẽ phải vào đường Phủ Doãn', meters: 120 },
-      { address: '25 Phủ Doãn, Hoàn Kiếm', direction: 'Đi thẳng trên đường Phủ Doãn. Vỉa hè bên trái', meters: 200 },
-      { address: 'Phủ Doãn, gần Bệnh viện Việt Đức', direction: 'Đi thẳng 80 mét. Bệnh viện Việt Đức bên phải', meters: 300 },
-      { address: 'Ngã tư Phủ Doãn - Tràng Thi', direction: 'Đến ngã tư. Rẽ trái vào Tràng Thi. Chờ đèn xanh để qua đường', meters: 400 },
-      { address: 'Tràng Thi, Hoàn Kiếm', direction: 'Qua đường an toàn. Đi thẳng trên Tràng Thi', meters: 450 },
-      { address: 'Tràng Thi, gần Cửa Nam', direction: 'Tiếp tục đi thẳng 100 mét. Cửa hàng bên phải', meters: 550 },
-      { address: 'Ngã tư Cửa Nam', direction: 'Đến ngã tư Cửa Nam. Đi thẳng qua đường. Cẩn thận xe cộ', meters: 650 },
-      { address: 'Đường Trần Hưng Đạo', direction: 'Rẽ phải vào Trần Hưng Đạo. Đi thẳng 200 mét', meters: 700 },
-      { address: 'Gần Công viên Thống Nhất', direction: 'Gần đến nơi. Cổng công viên bên trái, cách 50 mét', meters: 900 },
-      { address: 'Cổng Công viên Thống Nhất', direction: 'Đã đến Công viên Thống Nhất. Cổng vào bên trái. Chúc bố đi dạo vui vẻ!', meters: 950 }
-    ];
+    if (!navigator.geolocation) {
+      this.speak('Thiết bị không hỗ trợ định vị GPS.');
+      return;
+    }
 
-    this.currentRouteStep = 0;
+    const dirText = document.getElementById('nav-direction-text');
+    const locText = document.getElementById('nav-location-text');
 
-    const updateNav = () => {
-      const step = route[this.currentRouteStep % route.length];
-      const dirText = document.getElementById('nav-direction-text');
-      const locText = document.getElementById('nav-location-text');
+    if (dirText) dirText.textContent = 'Đang tìm tín hiệu GPS...';
+    if (locText) locText.textContent = '📍 Đang cập nhật...';
 
-      if (dirText) dirText.textContent = step.direction;
-      if (locText) locText.textContent = `📍 ${step.address}`;
+    const successCallback = async (position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      const heading = position.coords.heading || 0;
+      
+      // Giả lập reverse geocoding đơn giản vì không có API Key, 
+      // Nhưng trên thực tế có thể dùng Nominatim API (OpenStreetMap) miễn phí.
+      let addressStr = `Tọa độ: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+        const data = await res.json();
+        if (data && data.display_name) {
+          addressStr = data.display_name.split(',').slice(0, 3).join(', ');
+        }
+      } catch (e) {
+        console.warn('Reverse geocoding failed', e);
+      }
 
-      // Đọc chỉ đường
-      this.speak(step.direction);
+      if (dirText) dirText.textContent = 'Đang di chuyển...';
+      if (locText) locText.textContent = `📍 ${addressStr}`;
 
-      // Gửi vị trí cho người thân
+      // Gửi vị trí thật cho người thân qua WebRTC
       if (typeof BlindNavRTC !== 'undefined') {
         BlindNavRTC.send({
           type: 'location-update',
-          address: step.address,
-          direction: step.direction,
-          meters: step.meters
+          address: addressStr,
+          lat: lat,
+          lng: lng,
+          heading: heading
         });
-      }
-
-      this.currentRouteStep++;
-
-      // Nếu hết route, quay lại đầu
-      if (this.currentRouteStep >= route.length) {
-        this.currentRouteStep = 0;
       }
     };
 
-    // Hiển thị điểm đầu tiên (không đọc)
-    const first = route[0];
-    const dirText = document.getElementById('nav-direction-text');
-    const locText = document.getElementById('nav-location-text');
-    if (dirText) dirText.textContent = first.direction;
-    if (locText) locText.textContent = `📍 ${first.address}`;
-    this.currentRouteStep = 1;
+    const errorCallback = (error) => {
+      console.error('GPS error:', error);
+      if (dirText) dirText.textContent = 'Lỗi GPS. Đang chờ kết nối...';
+      // Thử lại mô phỏng nếu GPS bị lỗi (fallback)
+    };
 
-    // Cập nhật mỗi 20 giây
-    this.navInterval = setInterval(updateNav, 20000);
+    this.navInterval = navigator.geolocation.watchPosition(
+      successCallback, 
+      errorCallback, 
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   },
 
   // ═══════════════════════════════════════════
@@ -368,11 +374,9 @@ const UserApp = {
     if (this.isRecording) return;
     try {
       const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      this.mediaRecorder = new MediaRecorder(audioStream, {
-        mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
-          ? 'audio/webm;codecs=opus' 
-          : 'audio/webm'
-      });
+      const mimeType = MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : 
+                       (MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm');
+      this.mediaRecorder = new MediaRecorder(audioStream, { mimeType: mimeType || undefined });
       this.recordedChunks = [];
 
       this.mediaRecorder.ondataavailable = (e) => {
@@ -380,7 +384,8 @@ const UserApp = {
       };
 
       this.mediaRecorder.onstop = () => {
-        const blob = new Blob(this.recordedChunks, { type: 'audio/webm' });
+        const typeStr = this.mediaRecorder.mimeType || 'audio/webm';
+        const blob = new Blob(this.recordedChunks, { type: typeStr });
         if (this.recordingSeconds >= 1) {
           // Chỉ gửi nếu ghi >= 1 giây
           this.sendVoiceMessage(blob);
@@ -483,13 +488,14 @@ const UserApp = {
     // Âm thông báo
     if (typeof AudioManager !== 'undefined') AudioManager.playNotification('info');
 
-    // Hiện toast
+    // Hiện toast lâu hơn
     this.showMessageToast(msg.sender || 'Con Lan', msg.text || 'Tin nhắn mới');
 
     // ✅ ĐỌC TO tin nhắn bằng TTS tiếng Việt (Google voice)
     setTimeout(() => {
       const fullMessage = `Tin nhắn từ ${msg.sender || 'người thân'}. ${msg.text || ''}`;
       console.log('🔊 Speaking message:', fullMessage);
+      if (window.speechSynthesis) window.speechSynthesis.resume();
       this.speak(fullMessage);
     }, 800);
 
@@ -644,7 +650,16 @@ const UserApp = {
   // CALL MODULE
   // ═══════════════════════════════════════════
   async callFamily() {
+    // Ngăn chặn gọi liên tục nếu đang trong cuộc gọi
+    if (typeof BlindNavRTC !== 'undefined' && BlindNavRTC.callState !== 'idle') {
+      console.log('Đã trong cuộc gọi, bỏ qua lệnh gọi mới.');
+      return;
+    }
+
     try {
+      // Đánh dấu là đang gọi ngay lập tức để tránh double click
+      if (typeof BlindNavRTC !== 'undefined') BlindNavRTC.callState = 'calling';
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true, audio: true
       });
@@ -658,6 +673,7 @@ const UserApp = {
 
       this.speak('Đang gọi cho Con Lan.');
     } catch (err) {
+      if (typeof BlindNavRTC !== 'undefined') BlindNavRTC.callState = 'idle';
       this.speak('Không thể bắt đầu cuộc gọi. Vui lòng cấp quyền camera và micro.');
     }
   },
@@ -850,23 +866,54 @@ const UserApp = {
   },
 
   /**
-   * Volume buttons: Trên desktop, listen keydown events
-   * Volume Up → Ghi âm
-   * Volume Down → SOS
+   * Khởi tạo bắt sự kiện nút âm lượng (Volume Up/Down)
+   * Trên Desktop/Android: Bắt phím cứng
+   * Trên iOS/iPhone: Bắt sự kiện 'volumechange' của trình duyệt
+   * Yêu cầu: Nhấn nút âm lượng để lập tức gọi cho người thân
    */
   setupVolumeButtons() {
+    // 1. Dành cho Android/PC có hỗ trợ keydown cho nút volume
     document.addEventListener('keydown', (e) => {
-      // Volume Up → Toggle recording
-      if (e.key === 'AudioVolumeUp' || e.keyCode === 175) {
+      if (e.key === 'AudioVolumeUp' || e.keyCode === 175 || e.key === 'AudioVolumeDown' || e.keyCode === 174) {
         e.preventDefault();
-        this.toggleRecording();
-      }
-      // Volume Down → SOS
-      if (e.key === 'AudioVolumeDown' || e.keyCode === 174) {
-        e.preventDefault();
-        if (!this.sosActive) this.triggerSOS();
+        this.callFamily();
       }
     });
+
+    // 2. Dành cho iOS / iPhone và các trình duyệt di động
+    // Tạo một audio vô hình phát im lặng liên tục để đảm bảo `volumechange` luôn hoạt động trên mobile
+    const silentAudio = document.createElement('audio');
+    silentAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+    silentAudio.loop = true;
+    
+    // Bắt đầu phát khi người dùng tương tác lần đầu
+    const playSilentAudio = () => {
+      silentAudio.play().catch(e => console.warn('Silent audio play blocked:', e));
+      document.removeEventListener('touchstart', playSilentAudio);
+      document.removeEventListener('click', playSilentAudio);
+    };
+    document.addEventListener('touchstart', playSilentAudio);
+    document.addEventListener('click', playSilentAudio);
+
+    let lastVolume = 1;
+    let callTriggered = false;
+    
+    const handleVolumeChange = () => {
+      if (callTriggered) return; // Prevent multiple calls
+      console.log('📱 Khóa âm lượng được nhấn -> Gọi người thân!');
+      this.callFamily();
+      callTriggered = true;
+      setTimeout(() => { callTriggered = false; }, 3000); // Debounce 3 seconds
+    };
+
+    const videoEl = document.getElementById('camera-video');
+    if (videoEl) {
+      videoEl.addEventListener('volumechange', handleVolumeChange);
+    }
+    
+    // Thêm listener trên window và audio
+    window.addEventListener('volumechange', handleVolumeChange);
+    silentAudio.addEventListener('volumechange', handleVolumeChange);
   },
 
   /**

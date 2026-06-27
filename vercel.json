@@ -1,4 +1,5 @@
 {
+  "skewProtection": true,
   "rewrites": [
     { "source": "/family", "destination": "/index.html" },
     { "source": "/user", "destination": "/user.html" }

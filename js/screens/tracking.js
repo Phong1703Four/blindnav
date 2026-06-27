@@ -69,6 +69,10 @@ const TrackingScreen = {
       if (coords.length > 100) coords.shift();
       this.pathLine.setLatLngs(coords);
     }
+    // Automatically pan the map to the real location of the blind user
+    if (this.map) {
+      this.map.setView([loc.lat, loc.lng], 16, { animate: true });
+    }
     this.renderStatusBar();
     this.renderLocationInfo();
     this.updateStatusHeader();
