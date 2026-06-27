@@ -1,0 +1,442 @@
+/* ============================================
+   Màn hình 3 — Trung tâm SOS
+   ============================================ */
+
+/* ── Safe Status Card ── */
+.sos-safe-card {
+  margin: var(--space-4);
+  padding: var(--space-5);
+  background: linear-gradient(135deg, var(--color-success-light), #D1FAE5);
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(29, 158, 117, 0.15);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.sos-safe-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-full);
+  background: var(--color-success);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-glow-success);
+}
+
+.sos-safe-text h3 {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-success-dark);
+  margin-bottom: 2px;
+}
+
+.sos-safe-text p {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ── Emergency Contacts ── */
+.emergency-contacts {
+  margin: 0 var(--space-4) var(--space-3);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  overflow: hidden;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.contact-item:last-child {
+  border-bottom: none;
+}
+
+.contact-order {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  flex-shrink: 0;
+}
+
+.contact-info {
+  flex: 1;
+}
+
+.contact-name {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+}
+
+.contact-phone {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ── Check-in Section ── */
+.checkin-card {
+  margin: 0 var(--space-4) var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+}
+
+.checkin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.checkin-title {
+  font-weight: var(--font-weight-semibold);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.checkin-desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ── SOS History ── */
+.sos-history {
+  margin: 0 var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  overflow: hidden;
+}
+
+.sos-history-header {
+  padding: var(--space-4);
+  font-weight: var(--font-weight-semibold);
+  border-bottom: 1px solid var(--color-border-light);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.sos-history-empty {
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+.sos-event-item {
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border-light);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.sos-event-item:active {
+  background: var(--color-bg);
+}
+
+.sos-event-time {
+  font-size: var(--font-size-sm);
+  color: var(--color-danger);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: 2px;
+}
+
+.sos-event-location {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.sos-event-resolved {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-success);
+  margin-top: 4px;
+}
+
+/* ── Demo Button ── */
+.sos-demo-btn {
+  margin: var(--space-4);
+  padding: var(--space-4);
+  background: var(--color-danger-light);
+  border: 2px dashed var(--color-danger);
+  border-radius: var(--radius-lg);
+  color: var(--color-danger);
+  font-weight: var(--font-weight-semibold);
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: var(--font-size-base);
+}
+
+.sos-demo-btn:hover {
+  background: var(--color-danger);
+  color: white;
+  border-color: var(--color-danger);
+}
+
+/* ══════════════════════════════════════════
+   SOS ALERT OVERLAY — Full Screen Emergency
+   ══════════════════════════════════════════ */
+.sos-alert-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-sos-alert);
+  background: linear-gradient(180deg, #C62828 0%, #E24B4A 50%, #D32F2F 100%);
+  color: white;
+  display: none;
+  flex-direction: column;
+  overflow-y: auto;
+  animation: none;
+}
+
+.sos-alert-overlay.active {
+  display: flex;
+  animation: sosFlashIn 0.5s ease;
+}
+
+@keyframes sosFlashIn {
+  0% { opacity: 0; }
+  20% { opacity: 1; background: white; }
+  40% { background: #C62828; }
+  60% { background: white; }
+  80% { background: #C62828; }
+  100% { background: linear-gradient(180deg, #C62828 0%, #E24B4A 50%, #D32F2F 100%); }
+}
+
+.sos-alert-header {
+  padding: var(--space-8) var(--space-5) var(--space-4);
+  text-align: center;
+}
+
+.sos-alert-icon {
+  font-size: 3.5rem;
+  margin-bottom: var(--space-3);
+  animation: shake 0.6s infinite;
+}
+
+.sos-alert-title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-extrabold);
+  margin-bottom: var(--space-2);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.sos-alert-location {
+  font-size: var(--font-size-md);
+  opacity: 0.9;
+}
+
+/* ── Map Button ── */
+.sos-map-btn {
+  margin: var(--space-4) var(--space-5);
+  padding: var(--space-4);
+  background: white;
+  color: var(--color-danger);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-lg);
+  border: none;
+  transition: all var(--transition-fast);
+}
+
+.sos-map-btn:active {
+  transform: scale(0.96);
+}
+
+/* ── Auto Processing Timeline ── */
+.sos-timeline {
+  margin: 0 var(--space-5) var(--space-4);
+  padding: var(--space-4);
+  background: rgba(255,255,255,0.15);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(10px);
+}
+
+.sos-timeline-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+  margin-bottom: var(--space-3);
+}
+
+.sos-timeline-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  font-size: var(--font-size-base);
+}
+
+.sos-timeline-icon {
+  font-size: 1.2rem;
+  width: 24px;
+  text-align: center;
+}
+
+.sos-timeline-text {
+  flex: 1;
+}
+
+.sos-timeline-text.calling {
+  animation: pulse-text 1.5s infinite;
+}
+
+@keyframes pulse-text {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ── Audio Section ── */
+.sos-audio-section {
+  margin: 0 var(--space-5) var(--space-4);
+  padding: var(--space-4);
+  background: rgba(255,255,255,0.15);
+  border-radius: var(--radius-lg);
+}
+
+.sos-audio-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+  margin-bottom: var(--space-3);
+}
+
+.sos-audio-player {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.sos-audio-play {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background: white;
+  color: var(--color-danger);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.sos-audio-wave {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 30px;
+}
+
+.sos-audio-bar {
+  width: 3px;
+  background: rgba(255,255,255,0.6);
+  border-radius: var(--radius-full);
+  animation: audioWave 1s ease-in-out infinite;
+}
+
+@keyframes audioWave {
+  0%, 100% { height: 4px; }
+  50% { height: 20px; }
+}
+
+.sos-audio-time {
+  font-size: var(--font-size-sm);
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+/* ── Medical Profile ── */
+.sos-medical {
+  margin: 0 var(--space-5) var(--space-4);
+  padding: var(--space-4);
+  background: rgba(255,255,255,0.95);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-primary);
+}
+
+.sos-medical-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-danger);
+  margin-bottom: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.sos-medical-row {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+  font-size: var(--font-size-sm);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.sos-medical-row:last-child {
+  border-bottom: none;
+}
+
+.sos-medical-label {
+  color: var(--color-text-secondary);
+}
+
+.sos-medical-value {
+  font-weight: var(--font-weight-semibold);
+  text-align: right;
+}
+
+.sos-medical-value.danger {
+  color: var(--color-danger);
+}
+
+/* ── Resolve Button ── */
+.sos-resolve-btn {
+  margin: var(--space-4) var(--space-5) var(--space-8);
+  padding: var(--space-5);
+  background: rgba(255,255,255,0.2);
+  border: 2px solid white;
+  border-radius: var(--radius-xl);
+  color: white;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.sos-resolve-btn:hover,
+.sos-resolve-btn:active {
+  background: white;
+  color: var(--color-success);
+}

@@ -1,0 +1,185 @@
+/* ============================================
+   Màn hình 5 — Cộng đồng
+   ============================================ */
+
+/* ── Community Map ── */
+.community-map-container {
+  height: 250px;
+  width: 100%;
+  position: relative;
+}
+
+.community-map-container #community-map {
+  height: 100%;
+  width: 100%;
+}
+
+/* ── Report List ── */
+.report-list {
+  padding: var(--space-4);
+}
+
+.report-list-header {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.report-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.report-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.report-severity {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.report-severity.danger { background: var(--color-danger); }
+.report-severity.warning { background: var(--color-warning); }
+.report-severity.good { background: var(--color-success); }
+
+.report-content {
+  flex: 1;
+}
+
+.report-title {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  margin-bottom: 2px;
+}
+
+.report-address {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.report-meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  margin-top: 4px;
+  display: flex;
+  gap: var(--space-3);
+}
+
+.report-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.report-action-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+}
+
+.report-action-btn.confirm:hover,
+.report-action-btn.confirm:active {
+  background: var(--color-success-light);
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.report-action-btn.deny:hover,
+.report-action-btn.deny:active {
+  background: var(--color-danger-light);
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.report-confirmations {
+  font-size: var(--font-size-xs);
+  color: var(--color-success);
+  font-weight: var(--font-weight-medium);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* ── Add Report FAB ── */
+.add-report-fab {
+  position: fixed;
+  bottom: calc(var(--tab-bar-height) + var(--space-4));
+  right: var(--space-4);
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: var(--shadow-lg), var(--shadow-glow-primary);
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  z-index: var(--z-base);
+}
+
+.add-report-fab:active {
+  transform: scale(0.9);
+}
+
+/* ── Report Type Chips ── */
+.report-type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+}
+
+.report-type-chip {
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 2px solid var(--color-border);
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background: var(--color-surface);
+}
+
+.report-type-chip:active,
+.report-type-chip.selected {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.report-type-icon {
+  font-size: 1.5rem;
+  margin-bottom: var(--space-2);
+}
+
+.report-type-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}

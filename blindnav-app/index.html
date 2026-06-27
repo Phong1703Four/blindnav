@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="BlindNav — Ứng dụng hỗ trợ theo dõi và quản lý kính thông minh dành cho người thân của người mù. Samsung Solve for Tomorrow 2026.">
+  <title>BlindNav — Luôn bên cạnh, dù cách xa</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/navigation.css">
+  <link rel="stylesheet" href="css/screens/tracking.css">
+  <link rel="stylesheet" href="css/screens/routes.css">
+  <link rel="stylesheet" href="css/screens/sos.css">
+  <link rel="stylesheet" href="css/screens/stats.css">
+  <link rel="stylesheet" href="css/screens/community.css">
+  <link rel="stylesheet" href="css/screens/settings.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ═══════════════════════════════════════════
+       DESKTOP SIDEBAR NAVIGATION (hidden on mobile)
+       ═══════════════════════════════════════════ -->
+  <aside class="desktop-sidebar" id="desktop-sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-title">🕶️ BlindNav</div>
+      <div class="sidebar-brand-sub" data-i18n="app.slogan">Luôn bên cạnh, dù cách xa</div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="sidebar-item active" data-tab="tracking" id="sidebar-tracking">
+        <span class="sidebar-item-icon">📍</span>
+        <span class="sidebar-item-label" data-i18n="nav.tracking">Theo dõi</span>
+      </button>
+      <button class="sidebar-item" data-tab="routes" id="sidebar-routes">
+        <span class="sidebar-item-icon">🗺️</span>
+        <span class="sidebar-item-label" data-i18n="nav.routes">Lộ trình</span>
+      </button>
+      <button class="sidebar-item sidebar-sos" data-tab="sos" id="sidebar-sos">
+        <span class="sidebar-item-icon">🚨</span>
+        <span class="sidebar-item-label" data-i18n="nav.sosCenter">Trung tâm SOS</span>
+      </button>
+      <button class="sidebar-item" data-tab="stats" id="sidebar-stats">
+        <span class="sidebar-item-icon">📊</span>
+        <span class="sidebar-item-label" data-i18n="nav.stats">Thống kê</span>
+      </button>
+      <button class="sidebar-item" data-tab="community" id="sidebar-community">
+        <span class="sidebar-item-icon">👥</span>
+        <span class="sidebar-item-label" data-i18n="nav.community">Cộng đồng</span>
+      </button>
+      <button class="sidebar-item" data-tab="settings" id="sidebar-settings">
+        <span class="sidebar-item-icon">⚙️</span>
+        <span class="sidebar-item-label" data-i18n="nav.settings">Cài đặt</span>
+      </button>
+    </nav>
+    <div class="sidebar-status">
+      <div class="sidebar-status-row">🔋 <span id="sidebar-battery">78%</span></div>
+      <div class="sidebar-status-row">📶 <span id="sidebar-signal" data-i18n="sidebar.signalGood">Tốt</span></div>
+    </div>
+    <div class="sidebar-version" data-i18n="app.version">Samsung Solve for Tomorrow 2026 · v1.0.0</div>
+  </aside>
+
+  <!-- ═══════════════════════════════════════════
+       MAIN CONTENT AREA
+       ═══════════════════════════════════════════ -->
+  <div class="desktop-main">
+
+  <!-- ═══════════════════════════════════════════
+       HEADER — Status bar
+       ═══════════════════════════════════════════ -->
+  <header class="app-header" id="app-header">
+    <div class="header-left">
+      <div class="header-status">
+        <div class="status-dot active" id="header-status-dot"></div>
+        <span class="header-name" id="header-status-text" data-i18n="header.active">Bố đang hoạt động</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="hw-indicator demo" id="hw-indicator" onclick="HardwareBridge.showConnectionModal()" title="Trạng thái kết nối phần cứng" data-i18n-title="header.hwStatus">
+        <div class="hw-dot"></div>
+        <span id="hw-indicator-text" data-i18n="header.demo">Demo</span>
+      </div>
+      <button class="header-btn" id="theme-toggle-btn" onclick="ThemeManager.toggle()" title="Chế độ tối">🌙</button>
+      <button class="header-btn" id="header-call-btn" title="Gọi điện" data-i18n-title="header.call">📞</button>
+      <button class="header-btn" id="header-menu-btn" title="Menu" data-i18n-title="header.menu">⋯</button>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════
+       SCREEN 1 — Theo dõi GPS
+       ═══════════════════════════════════════════ -->
+  <main class="screen active" id="screen-tracking">
+    <!-- Map -->
+    <div class="tracking-map-container">
+      <div id="tracking-map"></div>
+      <button class="map-center-btn" id="map-center-btn" title="Căn giữa vị trí" data-i18n-title="tracking.centerMap">🎯</button>
+      <button class="community-fab" id="community-fab-btn" title="Cộng đồng" data-i18n-title="tracking.community">👥</button>
+    </div>
+
+    <!-- Tracking Info Panel (for desktop 2-column) -->
+    <div class="tracking-info-panel">
+
+    <!-- Glasses Status Bar -->
+    <div class="glasses-status-bar">
+      <div class="battery-indicator normal" id="battery-indicator">
+        <div class="battery-bar">
+          <div class="battery-fill" id="battery-fill" style="width: 78%"></div>
+        </div>
+        <span>🔋 <span id="battery-value">78%</span></span>
+      </div>
+      <div class="signal-indicator good" id="signal-indicator">
+        <div class="signal-bars">
+          <div class="signal-bar active"></div>
+          <div class="signal-bar active"></div>
+          <div class="signal-bar active"></div>
+          <div class="signal-bar active"></div>
+        </div>
+        <span>📶 <span id="signal-text" data-i18n="sidebar.signalGood">Tốt</span></span>
+      </div>
+    </div>
+
+    <!-- Connection Lost Banner (hidden by default) -->
+    <div class="connection-lost-banner" id="connection-lost-banner">
+      <span class="connection-lost-text" id="connection-lost-text" data-i18n="tracking.connectionLost">📡 Mất tín hiệu kính 3 phút trước</span>
+      <button class="connection-lost-btn" id="connection-lost-contact-btn" data-i18n="tracking.contactNow">Liên hệ ngay</button>
+    </div>
+
+    <!-- Location Info -->
+    <div class="location-info">
+      <div class="location-address">
+        <span>📍</span>
+        <span id="current-address">Hàng Bông, Hoàn Kiếm, Hà Nội</span>
+      </div>
+      <div class="location-details">
+        <span class="location-detail" id="current-speed">🚶 1.2 km/h · Hướng: Bắc</span>
+      </div>
+      <div class="location-details" style="margin-top: 4px;">
+        <span class="location-detail" id="time-outside">🕐 Ra khỏi nhà: 45 phút</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ═══ LIVE CAMERA FEED ═══ -->
+    <div class="live-feed-section" id="live-feed-section">
+      <div class="live-feed-header">
+        <div class="live-feed-title">
+          <span class="live-dot"></span>
+          <span>📹 Camera trực tiếp của Bố</span>
+        </div>
+        <button class="live-feed-expand-btn" id="live-feed-expand-btn" title="Mở rộng">⛶</button>
+      </div>
+      <div class="live-feed-container" id="live-feed-container">
+        <video id="remote-camera-feed" autoplay playsinline></video>
+        <div class="live-feed-placeholder" id="live-feed-placeholder">
+          <div style="font-size:2.5rem;margin-bottom:8px;">📷</div>
+          <div style="font-size:0.8125rem;color:var(--color-text-secondary);">Camera của Bố sẽ hiển thị tại đây</div>
+          <button class="btn btn-primary" style="margin-top:12px;padding:8px 20px;font-size:0.8125rem;" id="request-camera-btn" onclick="FamilyCallManager.requestCameraFeed()">
+            📡 Kết nối camera
+          </button>
+        </div>
+        <div class="live-feed-overlay">
+          <span class="live-feed-badge">LIVE</span>
+          <span class="live-feed-time" id="live-feed-time">--:--</span>
+        </div>
+      </div>
+      <div class="live-feed-actions">
+        <button class="btn btn-primary" style="flex:1;height:40px;font-size:0.875rem;" id="family-call-btn" onclick="FamilyCallManager.startCall()">
+          📞 Gọi video cho Bố
+        </button>
+        <button class="btn btn-outline" style="flex:1;height:40px;font-size:0.875rem;" id="family-msg-btn" onclick="FamilyCallManager.showSendMessage()">
+          💬 Gửi tin nhắn
+        </button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <div class="quick-action-item" id="qa-active-route">
+        <div class="quick-action-left">
+          <div class="quick-action-icon blue">🗺️</div>
+          <span class="quick-action-text" data-i18n="tracking.viewRoute">Xem lộ trình đang dùng</span>
+        </div>
+        <span class="quick-action-arrow">›</span>
+      </div>
+      <div class="quick-action-item" id="qa-history">
+        <div class="quick-action-left">
+          <div class="quick-action-icon green">📋</div>
+          <span class="quick-action-text" data-i18n="tracking.todayHistory">Lịch sử hôm nay</span>
+        </div>
+        <span class="quick-action-arrow">›</span>
+      </div>
+      <div class="quick-action-item" id="qa-geofence">
+        <div class="quick-action-left">
+          <div class="quick-action-icon orange">🛡️</div>
+          <span class="quick-action-text" data-i18n="tracking.setGeofence">Đặt vùng an toàn</span>
+        </div>
+        <span class="quick-action-arrow">›</span>
+      </div>
+    </div>
+
+    </div><!-- /tracking-info-panel -->
+  </main>
+
+  <!-- ═══════════════════════════════════════════
+       SCREEN 2 — Lộ trình quen thuộc
+       ═══════════════════════════════════════════ -->
+  <main class="screen" id="screen-routes">
+    <div class="screen-header">
+      <div class="screen-title-row">
+        <h1 class="screen-title" data-i18n="routes.title">Lộ trình của Bố</h1>
+      </div>
+    </div>
+    <div class="route-list" id="route-list">
+      <!-- Rendered by routes.js -->
+    </div>
+  </main>
+
+  <!-- ═══════════════════════════════════════════
+       SCREEN 3 — Trung tâm SOS
+       ═══════════════════════════════════════════ -->
+  <main class="screen" id="screen-sos">
+    <div class="screen-header">
+      <h1 class="screen-title" data-i18n="sos.title">Trung tâm SOS</h1>
+    </div>
+
+    <!-- Safe Status -->
+    <div class="sos-safe-card">
+      <div class="sos-safe-icon">✅</div>
+      <div class="sos-safe-text">
+        <h3 data-i18n="sos.dadSafe">Bố đang an toàn</h3>
+        <p id="sos-safe-detail">Ra ngoài 45 phút · GPS ổn định</p>
+      </div>
+    </div>
+
+    <!-- Emergency Contacts -->
+    <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;padding-right:20px;">
+      <span data-i18n="sos.emergencyContacts">LIÊN HỆ KHẨN CẤP</span>
+      <button class="btn btn-ghost" id="edit-contacts-btn" style="height:28px;font-size:0.75rem;padding:0 8px;" data-i18n="sos.edit">✏️ Sửa</button>
+    </div>
+    <div class="emergency-contacts" id="contacts-display">
+      <div class="contact-item">
+        <div class="contact-order">1</div>
+        <div class="contact-info">
+          <div class="contact-name">Con Lan</div>
+          <div class="contact-phone">0912 345 678</div>
+        </div>
+      </div>
+      <div class="contact-item">
+        <div class="contact-order">2</div>
+        <div class="contact-info">
+          <div class="contact-name">Anh Hùng</div>
+          <div class="contact-phone">0987 654 321</div>
+        </div>
+      </div>
+      <div class="contact-item">
+        <div class="contact-order">3</div>
+        <div class="contact-info">
+          <div class="contact-name">Bà Hoa</div>
+          <div class="contact-phone">0965 432 100</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Check-in -->
+    <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;padding-right:20px;">
+      <span data-i18n="sos.autoCheckin">CHECK-IN TỰ ĐỘNG</span>
+      <button class="btn btn-ghost" id="edit-checkin-btn" style="height:28px;font-size:0.75rem;padding:0 8px;" data-i18n="sos.edit">✏️ Sửa</button>
+    </div>
+    <div class="checkin-card">
+      <div class="checkin-header">
+        <div class="checkin-title">⏰ <span data-i18n="settings.on">Bật</span></div>
+        <span class="badge badge-success" id="checkin-badge" data-i18n="sos.checkinOn">Đang hoạt động</span>
+      </div>
+      <div class="checkin-desc" id="checkin-desc">Ra ngoài > 2 giờ → Cảnh báo app</div>
+    </div>
+
+    <!-- SOS History -->
+    <div class="section-label" data-i18n="sos.history">LỊCH SỬ SOS (30 NGÀY QUA)</div>
+    <div class="sos-history" id="sos-history-list">
+      <div class="sos-event-item" onclick="SOSScreen.showSOSDetail('sos_001')">
+        <div class="sos-event-time">🚨 20/06/2026 16:45</div>
+        <div class="sos-event-location">📍 Hàng Bông, Hoàn Kiếm</div>
+        <div class="sos-event-resolved">✅ Đã xử lý bởi Con Lan lúc 16:48</div>
+      </div>
+    </div>
+
+    <!-- Demo SOS Button -->
+    <button class="sos-demo-btn" id="sos-demo-btn" data-i18n="sos.demoBtn">
+      🚨 MÔ PHỎNG SOS (Demo cho cuộc thi)
+    </button>
+  </main>
+
+  <!-- ═══════════════════════════════════════════
+       SCREEN 4 — Thống kê
+       ═══════════════════════════════════════════ -->
+  <main class="screen" id="screen-stats">
+    <div class="screen-header">
+      <div class="screen-title-row">
+        <h1 class="screen-title" data-i18n="stats.title">Thống kê</h1>
+        <div class="period-selector">
+          <button class="period-btn active" data-period="week" data-i18n="stats.week">Tuần</button>
+          <button class="period-btn" data-period="month" data-i18n="stats.month">Tháng</button>
+        </div>
+      </div>
+    </div>
+    <div class="stats-date-range" data-i18n="stats.weekRange">2 – 8 tháng 6, 2026</div>
+
+    <!-- Metric Cards -->
+    <div class="stats-metrics">
+      <div class="stat-metric km">
+        <div class="stat-metric-value" id="stat-km-val">8.4</div>
+        <div class="stat-metric-unit" data-i18n="stats.km">km</div>
+        <div class="stat-metric-label" data-i18n="stats.kmLabel">đã đi</div>
+      </div>
+      <div class="stat-metric obstacle">
+        <div class="stat-metric-value" id="stat-obs-val">47</div>
+        <div class="stat-metric-unit" data-i18n="stats.obstacles">vật cản</div>
+        <div class="stat-metric-label" data-i18n="stats.obstaclesLabel">tránh được</div>
+      </div>
+      <div class="stat-metric traffic">
+        <div class="stat-metric-value" id="stat-light-val">12</div>
+        <div class="stat-metric-unit" data-i18n="stats.lights">đèn</div>
+        <div class="stat-metric-label" data-i18n="stats.lightsLabel">giao thông</div>
+      </div>
+    </div>
+
+    <!-- Daily Chart -->
+    <div class="daily-chart">
+      <div class="daily-chart-title" data-i18n="stats.dailyChart">Hoạt động theo ngày</div>
+      <div id="daily-chart-bars">
+        <!-- Rendered by stats.js -->
+      </div>
+    </div>
+
+    <!-- Frequent Places -->
+    <div class="frequent-places">
+      <div class="frequent-places-title" data-i18n="stats.frequentPlaces">Địa điểm thường lui tới</div>
+      <div id="frequent-places-list">
+        <!-- Rendered by stats.js -->
+      </div>
+    </div>
+
+    <!-- Time Distribution -->
+    <div class="time-distribution">
+      <div class="time-distribution-title" data-i18n="stats.timeDistribution">Khung giờ thường đi</div>
+      <div id="time-distribution-bars">
+        <!-- Rendered by stats.js -->
+      </div>
+    </div>
+
+    <!-- Weekly Report -->
+    <div class="weekly-report">
+      <div class="weekly-report-title" data-i18n="stats.weeklyReport">📊 Báo cáo tuần của Bố</div>
+      <div class="weekly-report-text" id="weekly-report-text">
+        Tuần này bố đã đi được 8.4 km, tránh 47 vật cản và nhận diện 12 đèn giao thông. Bố ra ngoài nhiều nhất vào sáng Thứ 4. Không có sự kiện SOS nào.
+      </div>
+      <span class="weekly-report-heart">💙</span>
+    </div>
+  </main>
+
+  <!-- ═══════════════════════════════════════════
+       SCREEN 5 — Cộng đồng
+       ═══════════════════════════════════════════ -->
+  <main class="screen" id="screen-community">
+    <div class="screen-header">
+      <div class="screen-title-row">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="back-btn" onclick="App.goBackFromCommunity()">← </button>
+          <h1 class="screen-title" data-i18n="community.title">Cộng đồng</h1>
+        </div>
+        <button class="btn btn-primary" style="padding: 0 16px; height: 40px; font-size: 0.875rem;" onclick="CommunityScreen.showAddReport()" data-i18n="community.addReport">＋ Báo cáo</button>
+      </div>
+    </div>
+
+    <!-- Community Map -->
+    <div class="community-map-container">
+      <div id="community-map"></div>
+    </div>
+
+    <!-- Reports Near Dad -->
+    <div class="report-list">
+      <div class="report-list-header" data-i18n="community.nearDad">📍 Gần vị trí của Bố</div>
+      <div id="community-reports">
+        <!-- Rendered by community.js -->
+      </div>
+    </div>
+  </main>
+
+  <!-- ═══════════════════════════════════════════
+       SCREEN 6 — Cài đặt
+       ═══════════════════════════════════════════ -->
+  <main class="screen" id="screen-settings">
+    <div class="screen-header">
+      <h1 class="screen-title" data-i18n="settings.title">Cài đặt</h1>
+    </div>
+
+    <!-- Profile Card -->
+    <div class="settings-profile">
+      <div class="settings-avatar">👴</div>
+      <div class="settings-profile-info">
+        <h3>Bố — Nguyễn Văn An</h3>
+        <p data-i18n="settings.paired">Kính BlindNav đã ghép đôi</p>
+      </div>
+    </div>
+
+    <!-- Voice & Sound -->
+    <div class="settings-section">
+      <div class="settings-section-title" data-i18n="settings.voiceSound">🔊 Giọng nói & Âm thanh</div>
+      <div class="settings-group">
+        <div class="settings-row" id="setting-voice-gender">
+          <div class="settings-row-left">
+            <span class="settings-row-icon">🗣️</span>
+            <span class="settings-row-label" data-i18n="settings.voiceGender">Giọng đọc</span>
+          </div>
+          <div class="settings-row-value">
+            <span id="voice-gender-value">Nữ miền Bắc</span> <span class="settings-row-arrow">›</span>
+          </div>
+        </div>
+        <div class="settings-row" id="setting-voice-speed">
+          <div class="settings-row-left">
+            <span class="settings-row-icon">⏱️</span>
+            <span class="settings-row-label" data-i18n="settings.voiceSpeed">Tốc độ đọc</span>
+          </div>
+          <div class="settings-row-value">
+            <span id="voice-speed-value">Chậm</span> <span class="settings-row-arrow">›</span>
+          </div>
+        </div>
+        <div class="settings-row" style="flex-direction:column; align-items: stretch; gap: 8px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span class="settings-row-icon">🔊</span>
+            <span class="settings-row-label" data-i18n="settings.volume">Âm lượng</span>
+          </div>
+          <div class="volume-slider-container" style="padding:0;">
+            <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="80">
+          </div>
+        </div>
+        <div class="settings-row" id="setting-test-voice" style="justify-content:center;">
+          <button class="btn btn-outline" style="width:100%;height:44px;" onclick="SettingsScreen.testVoice()">
+            <span data-i18n="settings.testVoice">🔊 Nghe thử</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Theme / Appearance -->
+    <div class="settings-section">
+      <div class="settings-section-title" data-i18n="settings.theme">🎨 Giao diện</div>
+      <div class="settings-group">
+        <div class="settings-row" id="setting-theme-mode">
+          <div class="settings-row-left">
+            <span class="settings-row-icon">🌓</span>
+            <span class="settings-row-label" data-i18n="settings.themeMode">Chế độ</span>
+          </div>
+          <div class="settings-row-value">
+            <span id="theme-mode-value">☀️ Sáng</span> <span class="settings-row-arrow">›</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Language -->
+    <div class="settings-section">
+      <div class="settings-section-title" data-i18n="settings.language">🌐 Ngôn ngữ</div>
+      <div class="settings-group">
+        <div class="settings-row" id="setting-language">
+          <div class="settings-row-left">
+            <span class="settings-row-icon">🌐</span>
+            <span class="settings-row-label" data-i18n="settings.languageLabel">Ngôn ngữ</span>
+          </div>
+          <div class="settings-row-value">
+            <span id="language-value">🇻🇳 Tiếng Việt</span> <span class="settings-row-arrow">›</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Features -->
+    <div class="settings-section">
+      <div class="settings-section-title" data-i18n="settings.aiFeatures">🤖 Tính năng AI</div>
+      <div class="settings-group">
+        <div class="ai-feature-row">
+          <span class="ai-feature-label" data-i18n="settings.obstacleDetection">Nhận diện vật cản</span>
+          <label class="toggle-switch">
+            <input type="checkbox" class="ai-toggle" data-feature="obstacleDetection" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="ai-feature-row">
+          <span class="ai-feature-label" data-i18n="settings.trafficLight">Đèn giao thông</span>
+          <label class="toggle-switch">
+            <input type="checkbox" class="ai-toggle" data-feature="trafficLight" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="ai-feature-row">
+          <span class="ai-feature-label" data-i18n="settings.ocr">OCR đọc biển hiệu</span>
+          <label class="toggle-switch">
+            <input type="checkbox" class="ai-toggle" data-feature="ocr" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="ai-feature-row">
+          <span class="ai-feature-label" data-i18n="settings.currency">Nhận diện tiền VNĐ</span>
+          <label class="toggle-switch">
+            <input type="checkbox" class="ai-toggle" data-feature="currency" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="ai-feature-row">
+          <span class="ai-feature-label" data-i18n="settings.faceRecognition">Nhận diện người thân</span>
+          <label class="toggle-switch">
+            <input type="checkbox" class="ai-toggle" data-feature="faceRecognition" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="ai-feature-row">
+          <span class="ai-feature-label" data-i18n="settings.smallObstacle">Thông báo vật cản nhỏ</span>
+          <label class="toggle-switch">
+            <input type="checkbox" class="ai-toggle" data-feature="smallObstacle">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Location & Safety -->
+    <div class="settings-section">
+      <div class="settings-section-title" data-i18n="settings.locationSafety">📍 Vị trí & An toàn</div>
+      <div class="settings-group">
+        <div class="settings-row" id="setting-gps-interval">
+          <div class="settings-row-left">
+            <span class="settings-row-icon">📡</span>
+            <span class="settings-row-label" data-i18n="settings.gpsUpdate">Cập nhật GPS</span>
+          </div>
+          <div class="settings-row-value">
+            <span id="gps-interval-value">mỗi 5 giây</span> <span class="settings-row-arrow">›</span>
+          </div>
+        </div>
+        <div class="settings-row" id="setting-geofence">
+          <div class="settings-row-left">
+            <span class="settings-row-icon">🛡️</span>
+            <span class="settings-row-label" data-i18n="settings.geofence">Geofence</span>
+          </div>
+          <div class="settings-row-value">
+            <span id="geofence-count-value">2 vùng</span> <span class="settings-row-arrow">›</span>
+          </div>
+        </div>
+        <div class="settings-row" id="setting-checkin">
+          <div class="settings-row-left">
+            <span class="settings-row-icon">⏰</span>
+            <span class="settings-row-label" data-i18n="settings.autoCheckin">Check-in tự động</span>
+          </div>
+          <div class="settings-row-value">
+            <span class="badge badge-success" style="margin-right:4px" id="setting-checkin-badge" data-i18n="settings.on">Bật</span>
+            <span class="settings-row-arrow">›</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="settings-section">
+      <div class="settings-section-title" data-i18n="settings.notifications">🔔 Thông báo</div>
+      <div class="settings-group">
+        <div class="ai-feature-row">
+          <span class="ai-feature-label" data-i18n="settings.notifSOS">🚨 SOS</span>
+          <label class="toggle-switch">
+            <input type="checkbox" class="notif-toggle" data-notif="sos" checked disabled>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="ai-feature-row">
+          <span class="ai-feature-label" data-i18n="settings.notifBattery">🔋 Pin kính yếu (&lt;20%)</span>
+          <label class="toggle-switch">
+            <input type="checkbox" class="notif-toggle" data-notif="lowBattery" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="ai-feature-row">
+          <span class="ai-feature-label" data-i18n="settings.notifConnection">📡 Mất kết nối kính</span>
+          <label class="toggle-switch">
+            <input type="checkbox" class="notif-toggle" data-notif="lostConnection" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="ai-feature-row">
+          <span class="ai-feature-label" data-i18n="settings.notifWeekly">📊 Báo cáo tuần</span>
+          <label class="toggle-switch">
+            <input type="checkbox" class="notif-toggle" data-notif="weeklyReport" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="ai-feature-row">
+          <span class="ai-feature-label" data-i18n="settings.notifCommunity">👥 Cộng đồng gần bố</span>
+          <label class="toggle-switch">
+            <input type="checkbox" class="notif-toggle" data-notif="communityNearby">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Medical Profile -->
+    <div class="settings-section">
+      <div class="settings-section-title" data-i18n="settings.medicalProfile">🏥 Hồ sơ y tế</div>
+      <div class="settings-group">
+        <div class="settings-row" id="view-medical-btn">
+          <div class="settings-row-left">
+            <span class="settings-row-icon">❤️</span>
+            <span class="settings-row-label" data-i18n="settings.viewMedical">Xem hồ sơ y tế của Bố</span>
+          </div>
+          <div class="settings-row-value">
+            <span class="badge badge-danger" data-i18n="settings.important">Quan trọng</span>
+            <span class="settings-row-arrow">›</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- App Info -->
+    <div class="settings-app-info">
+      <div class="settings-app-logo">🕶️</div>
+      <div data-i18n="app.title">BlindNav — Luôn bên cạnh, dù cách xa</div>
+      <div class="settings-app-version" data-i18n="app.version">Samsung Solve for Tomorrow 2026 · v1.0.0</div>
+    </div>
+  </main>
+
+  <!-- ═══════════════════════════════════════════
+       BOTTOM TAB BAR
+       ═══════════════════════════════════════════ -->
+  <nav class="tab-bar">
+    <button class="tab-item active" data-tab="tracking" id="tab-tracking">
+      <span class="tab-icon">📍</span>
+      <span class="tab-label" data-i18n="nav.tracking">Theo dõi</span>
+    </button>
+    <button class="tab-item" data-tab="routes" id="tab-routes">
+      <span class="tab-icon">🗺️</span>
+      <span class="tab-label" data-i18n="nav.routes">Lộ trình</span>
+    </button>
+    <button class="tab-item tab-sos" data-tab="sos" id="tab-sos">
+      <div class="tab-sos-btn">SOS</div>
+      <span class="tab-label">SOS</span>
+    </button>
+    <button class="tab-item" data-tab="stats" id="tab-stats">
+      <span class="tab-icon">📊</span>
+      <span class="tab-label" data-i18n="nav.stats">Thống kê</span>
+    </button>
+    <button class="tab-item" data-tab="settings" id="tab-settings">
+      <span class="tab-icon">⚙️</span>
+      <span class="tab-label" data-i18n="nav.settings">Cài đặt</span>
+    </button>
+  </nav>
+
+  </div><!-- /desktop-main -->
+
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MODALS & OVERLAYS
+     ═══════════════════════════════════════════ -->
+
+<!-- Route Detail Modal -->
+<div class="modal-overlay" id="route-detail-modal">
+  <div class="modal-content">
+    <!-- Rendered by routes.js -->
+  </div>
+</div>
+
+<!-- Medical Profile Modal -->
+<div class="modal-overlay" id="medical-modal">
+  <div class="modal-content">
+    <!-- Rendered by settings.js -->
+  </div>
+</div>
+
+<!-- SOS ALERT OVERLAY -->
+<div class="sos-alert-overlay" id="sos-alert-overlay">
+  <div class="sos-alert-header">
+    <div class="sos-alert-icon">🚨</div>
+    <div class="sos-alert-title" data-i18n="sos.alertTitle">BỐ VỪA BẤM SOS</div>
+    <div class="sos-alert-location">21:34 · Hàng Bông, Hoàn Kiếm</div>
+  </div>
+
+  <button class="sos-map-btn" id="sos-view-map-btn" data-i18n="sos.viewMap">
+    📍 XEM VỊ TRÍ TRÊN BẢN ĐỒ
+  </button>
+
+  <div class="sos-timeline">
+    <div class="sos-timeline-title" data-i18n="sos.processing">Đang xử lý tự động</div>
+    <div class="sos-timeline-item" id="sos-step-sms">
+      <span class="sos-timeline-icon">⏳</span>
+      <span class="sos-timeline-text" data-i18n="sos.sendingSMS">Đang gửi SMS vị trí...</span>
+    </div>
+    <div class="sos-timeline-item" id="sos-step-call1">
+      <span class="sos-timeline-icon">⏳</span>
+      <span class="sos-timeline-text" data-i18n="sos.preparingCall">Chuẩn bị gọi điện...</span>
+    </div>
+    <div class="sos-timeline-item" id="sos-step-backup">
+      <span class="sos-timeline-icon">⏳</span>
+      <span class="sos-timeline-text">Dự phòng: Anh Hùng (10s)</span>
+    </div>
+  </div>
+
+  <div class="sos-audio-section">
+    <div class="sos-audio-title" data-i18n="sos.envRecording">Ghi âm môi trường</div>
+    <div class="sos-audio-player">
+      <button class="sos-audio-play" id="sos-audio-play-btn">▶</button>
+      <div class="sos-audio-wave" id="sos-audio-wave"></div>
+      <span class="sos-audio-time" id="sos-audio-time">00:30</span>
+    </div>
+  </div>
+
+  <div class="sos-medical">
+    <div class="sos-medical-title" data-i18n="sos.medicalProfile">🏥 Hồ sơ y tế</div>
+    <div class="sos-medical-row">
+      <span class="sos-medical-label" data-i18n="sos.fullName">Họ tên</span>
+      <span class="sos-medical-value">Nguyễn Văn An</span>
+    </div>
+    <div class="sos-medical-row">
+      <span class="sos-medical-label" data-i18n="sos.age">Tuổi</span>
+      <span class="sos-medical-value">71 tuổi</span>
+    </div>
+    <div class="sos-medical-row">
+      <span class="sos-medical-label" data-i18n="sos.bloodType">Nhóm máu</span>
+      <span class="sos-medical-value danger">O+</span>
+    </div>
+    <div class="sos-medical-row">
+      <span class="sos-medical-label" data-i18n="sos.allergies">Dị ứng</span>
+      <span class="sos-medical-value danger">Penicillin, Aspirin</span>
+    </div>
+    <div class="sos-medical-row">
+      <span class="sos-medical-label" data-i18n="sos.conditions">Bệnh nền</span>
+      <span class="sos-medical-value">Huyết áp, Tiểu đường</span>
+    </div>
+  </div>
+
+  <button class="sos-resolve-btn" id="sos-resolve-btn" data-i18n="sos.resolveBtn">
+    ✅ Báo đã xử lý — Bố ổn rồi
+  </button>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     VIDEO CALL MODAL (Family side)
+     ═══════════════════════════════════════════ -->
+<div class="family-call-overlay" id="family-call-overlay">
+  <div class="family-call-content">
+    <div class="family-call-video-area">
+      <video id="family-remote-video" autoplay playsinline></video>
+      <video id="family-local-video" autoplay playsinline muted></video>
+      <div class="family-call-info">
+        <div class="family-call-name">📞 Bố — Nguyễn Văn An</div>
+        <div class="family-call-status" id="family-call-status">Đang kết nối...</div>
+        <div class="family-call-timer" id="family-call-timer">00:00</div>
+      </div>
+    </div>
+    <div class="family-call-controls">
+      <button class="family-call-ctrl-btn" id="family-mute-btn" onclick="FamilyCallManager.toggleMute()">
+        <span id="family-mute-icon">🎤</span>
+        <span>Mic</span>
+      </button>
+      <button class="family-call-ctrl-btn end" id="family-end-call-btn" onclick="FamilyCallManager.endCall()">
+        <span>📴</span>
+        <span>Kết thúc</span>
+      </button>
+      <button class="family-call-ctrl-btn" id="family-speaker-btn" onclick="FamilyCallManager.toggleSpeaker()">
+        <span>🔊</span>
+        <span>Loa</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     LIVE CAMERA & CALL STYLES (inline)
+     ═══════════════════════════════════════════ -->
+<style>
+/* ── Live Camera Feed Section ── */
+.live-feed-section {
+  padding: 0 20px;
+  margin-bottom: 4px;
+}
+.live-feed-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.live-feed-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.875rem; font-weight: 600;
+  color: var(--color-text-primary);
+}
+.live-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #E24B4A;
+  animation: live-blink 1.5s ease-in-out infinite;
+}
+@keyframes live-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.live-feed-expand-btn {
+  width: 32px; height: 32px; border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer; font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s ease;
+}
+.live-feed-expand-btn:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-primary);
+}
+.live-feed-container {
+  position: relative; width: 100%;
+  aspect-ratio: 16/9; border-radius: 14px;
+  overflow: hidden; background: #111;
+  border: 2px solid var(--color-border);
+}
+.live-feed-container video {
+  width: 100%; height: 100%; object-fit: cover;
+  display: none;
+}
+.live-feed-container video.active {
+  display: block;
+}
+.live-feed-placeholder {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  color: #fff;
+}
+.live-feed-placeholder.hidden { display: none; }
+.live-feed-overlay {
+  position: absolute; top: 8px; left: 8px;
+  display: flex; gap: 8px; align-items: center;
+  z-index: 2;
+}
+.live-feed-badge {
+  background: #E24B4A; color: #fff;
+  padding: 2px 8px; border-radius: 4px;
+  font-size: 0.6875rem; font-weight: 800;
+  letter-spacing: 1px;
+  animation: live-blink 1.5s ease-in-out infinite;
+  display: none;
+}
+.live-feed-badge.active { display: inline-block; }
+.live-feed-time {
+  font-size: 0.75rem; color: rgba(255,255,255,0.8);
+  background: rgba(0,0,0,0.5); padding: 2px 8px;
+  border-radius: 4px; display: none;
+}
+.live-feed-time.active { display: inline-block; }
+.live-feed-actions {
+  display: flex; gap: 8px; margin-top: 10px;
+}
+
+/* ── Family Video Call Overlay ── */
+.family-call-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.95);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.family-call-overlay.active {
+  opacity: 1; pointer-events: auto;
+}
+.family-call-content {
+  width: 100%; max-width: 800px;
+  display: flex; flex-direction: column;
+  gap: 20px; padding: 20px;
+}
+.family-call-video-area {
+  position: relative; width: 100%;
+  aspect-ratio: 16/9; border-radius: 16px;
+  overflow: hidden; background: #111;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.family-call-video-area video {
+  width: 100%; height: 100%; object-fit: cover;
+}
+#family-local-video {
+  position: absolute; bottom: 12px; right: 12px;
+  width: 150px; height: auto; aspect-ratio: 4/3;
+  border-radius: 10px; border: 2px solid rgba(255,255,255,0.3);
+  object-fit: cover; z-index: 2;
+}
+.family-call-info {
+  position: absolute; top: 12px; left: 12px;
+  z-index: 2; color: #fff;
+}
+.family-call-name {
+  font-size: 1rem; font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+.family-call-status {
+  font-size: 0.8125rem; color: rgba(255,255,255,0.7);
+  margin-top: 2px;
+}
+.family-call-timer {
+  font-size: 1.5rem; font-weight: 300;
+  margin-top: 4px; font-variant-numeric: tabular-nums;
+}
+.family-call-controls {
+  display: flex; justify-content: center; gap: 20px;
+}
+.family-call-ctrl-btn {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 6px;
+  padding: 14px 24px; border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.08);
+  color: #fff; cursor: pointer;
+  font-size: 0.8125rem; font-weight: 500;
+  transition: all 0.2s ease;
+}
+.family-call-ctrl-btn:hover {
+  background: rgba(255,255,255,0.15);
+}
+.family-call-ctrl-btn span:first-child {
+  font-size: 1.5rem;
+}
+.family-call-ctrl-btn.end {
+  background: #E24B4A;
+  border-color: #E24B4A;
+}
+.family-call-ctrl-btn.end:hover {
+  background: #C62828;
+}
+</style>
+
+<!-- ═══════════════════════════════════════════
+     SCRIPTS
+     ═══════════════════════════════════════════ -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Firebase SDK (compat mode for simplicity) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+
+<!-- App Scripts -->
+<script src="js/data.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/hardware-bridge.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/webrtc.js"></script>
+<script src="js/screens/tracking.js"></script>
+<script src="js/screens/routes.js"></script>
+<script src="js/screens/sos.js"></script>
+<script src="js/screens/stats.js"></script>
+<script src="js/screens/community.js"></script>
+<script src="js/screens/settings.js"></script>
+<script src="js/app.js"></script>
+
+<!-- Family Call Manager (BroadcastChannel + WebRTC) -->
+<script>
+/* ============================================
+   Family Call Manager
+   Liên kết thật giữa 2 tab qua BroadcastChannel
+   ============================================ */
+const FamilyCallManager = {
+  isMuted: false,
+  isConnected: false,
+  feedTimer: null,
+  feedSeconds: 0,
+
+  init() {
+    if (typeof BlindNavRTC !== 'undefined') {
+      BlindNavRTC.init('family');
+
+      // Khi có cuộc gọi đến (user gọi cho family)
+      BlindNavRTC.onCallStateChange = (state) => this.onCallStateChange(state);
+      BlindNavRTC.onCallTimer = (time) => this.updateTimer(time);
+      BlindNavRTC.onRemoteStream = (stream) => this.onRemoteStream(stream);
+
+      // Nhận camera feed từ user
+      BlindNavRTC.onCameraFeed = (stream) => this.onCameraFeed(stream);
+
+      // Nhận tin nhắn thoại từ user
+      BlindNavRTC.onMessage = (data) => {
+        if (data.type === 'voice-message') {
+          App.showToast(`🎤 Bố vừa gửi tin nhắn thoại (${data.duration}s)`, 'info');
+          if (typeof AudioManager !== 'undefined') AudioManager.playNotification('info');
+          // Phát audio nếu có
+          if (data.audioData) {
+            const audio = new Audio(data.audioData);
+            audio.play();
+          }
+        }
+      };
+
+      // Nhận SOS từ user
+      BlindNavRTC.onSOSAlert = (data) => {
+        if (data.type === 'sos-alert') {
+          // Kích hoạt SOS trên giao diện người thân
+          App.showToast('🚨 BỐ VỪA BẤM SOS! Kiểm tra ngay!', 'danger');
+          if (typeof AudioManager !== 'undefined') AudioManager.playSOSAlert();
+          if (typeof App !== 'undefined') App.triggerSOS();
+        }
+        if (data.type === 'sos-cancel') {
+          App.showToast('✅ Bố đã hủy SOS — An toàn', 'success');
+          if (typeof AudioManager !== 'undefined') AudioManager.stopSOSAlert();
+        }
+      };
+    }
+
+    // Expand button
+    const expandBtn = document.getElementById('live-feed-expand-btn');
+    if (expandBtn) {
+      expandBtn.addEventListener('click', () => this.toggleExpandFeed());
+    }
+  },
+
+  // Nhận camera feed real từ user qua WebRTC
+  onCameraFeed(stream) {
+    const video = document.getElementById('remote-camera-feed');
+    const placeholder = document.getElementById('live-feed-placeholder');
+    const badge = document.querySelector('.live-feed-badge');
+    const timeEl = document.querySelector('.live-feed-time');
+
+    if (video) {
+      video.srcObject = stream;
+      video.classList.add('active');
+    }
+    if (placeholder) placeholder.classList.add('hidden');
+    if (badge) badge.classList.add('active');
+    if (timeEl) {
+      timeEl.classList.add('active');
+      this.feedSeconds = 0;
+      clearInterval(this.feedTimer);
+      this.feedTimer = setInterval(() => {
+        this.feedSeconds++;
+        const m = Math.floor(this.feedSeconds/60).toString().padStart(2,'0');
+        const s = (this.feedSeconds%60).toString().padStart(2,'0');
+        timeEl.textContent = m + ':' + s;
+      }, 1000);
+    }
+
+    App.showToast('📹 Đã kết nối camera trực tiếp của Bố', 'success');
+  },
+
+  // Yêu cầu camera feed (fallback nếu chưa tự nhận)
+  requestCameraFeed() {
+    // Gửi yêu cầu qua BroadcastChannel
+    if (typeof BlindNavRTC !== 'undefined') {
+      BlindNavRTC.send({ type: 'request-camera' });
+    }
+    App.showToast('📡 Đang kết nối camera của Bố...', 'info');
+  },
+
+  // Bắt đầu gọi video cho user
+  async startCall() {
+    const overlay = document.getElementById('family-call-overlay');
+    if (overlay) overlay.classList.add('active');
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const localVideo = document.getElementById('family-local-video');
+      if (localVideo) localVideo.srcObject = stream;
+
+      if (typeof BlindNavRTC !== 'undefined') {
+        BlindNavRTC.startCall(stream);
+      }
+    } catch(e) {
+      this.endCall();
+      App.showToast('Không thể truy cập camera/mic. Cấp quyền và thử lại.', 'danger');
+    }
+  },
+
+  endCall() {
+    const overlay = document.getElementById('family-call-overlay');
+    if (overlay) overlay.classList.remove('active');
+
+    if (typeof BlindNavRTC !== 'undefined') BlindNavRTC.endCall();
+
+    const localVideo = document.getElementById('family-local-video');
+    if (localVideo?.srcObject) {
+      localVideo.srcObject.getTracks().forEach(t => t.stop());
+      localVideo.srcObject = null;
+    }
+
+    const remoteVideo = document.getElementById('family-remote-video');
+    if (remoteVideo) remoteVideo.srcObject = null;
+
+    if (typeof AudioManager !== 'undefined') AudioManager.playCallEnd();
+    App.showToast('📴 Cuộc gọi đã kết thúc', 'info');
+  },
+
+  toggleMute() {
+    this.isMuted = !this.isMuted;
+    const icon = document.getElementById('family-mute-icon');
+    if (icon) icon.textContent = this.isMuted ? '🔇' : '🎤';
+
+    if (BlindNavRTC?.localStream) {
+      BlindNavRTC.localStream.getAudioTracks().forEach(t => {
+        t.enabled = !this.isMuted;
+      });
+    }
+  },
+
+  toggleSpeaker() {
+    App.showToast('🔊 Loa ngoài đã bật', 'info');
+  },
+
+  onCallStateChange(state) {
+    const statusEl = document.getElementById('family-call-status');
+    if (!statusEl) return;
+
+    switch(state) {
+      case 'calling': statusEl.textContent = 'Đang gọi...'; break;
+      case 'ringing':
+        statusEl.textContent = 'Đang đổ chuông...';
+        // Nếu user gọi đến family, tự động nhận
+        if (BlindNavRTC._incomingOfferSdp) {
+          this.handleIncomingCall();
+        }
+        break;
+      case 'connected':
+        statusEl.textContent = 'Đã kết nối';
+        if (typeof AudioManager !== 'undefined') AudioManager.playCallConnect();
+        break;
+      case 'ended':
+        statusEl.textContent = 'Đã kết thúc';
+        setTimeout(() => {
+          const overlay = document.getElementById('family-call-overlay');
+          if (overlay) overlay.classList.remove('active');
+        }, 1500);
+        break;
+    }
+  },
+
+  // Xử lý cuộc gọi đến từ user (SOS hoặc gọi thường)
+  async handleIncomingCall() {
+    // Hiện overlay gọi
+    const overlay = document.getElementById('family-call-overlay');
+    if (overlay) overlay.classList.add('active');
+
+    const statusEl = document.getElementById('family-call-status');
+    if (statusEl) statusEl.textContent = 'Cuộc gọi đến từ Bố...';
+
+    if (typeof AudioManager !== 'undefined') AudioManager.playRingtone();
+
+    App.showToast('📞 Bố đang gọi video!', 'info');
+
+    // Tự động nhận sau 2s
+    setTimeout(async () => {
+      if (typeof AudioManager !== 'undefined') AudioManager.stopRingtone();
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const localVideo = document.getElementById('family-local-video');
+        if (localVideo) localVideo.srcObject = stream;
+
+        if (typeof BlindNavRTC !== 'undefined' && BlindNavRTC._incomingOfferSdp) {
+          BlindNavRTC.answerCall(BlindNavRTC._incomingOfferSdp);
+        }
+      } catch(e) {
+        console.error('Cannot answer call:', e);
+      }
+    }, 2000);
+  },
+
+  updateTimer(time) {
+    const el = document.getElementById('family-call-timer');
+    if (el) el.textContent = time;
+  },
+
+  onRemoteStream(stream) {
+    // Hiển thị video remote
+    const video = document.getElementById('family-remote-video');
+    if (video) video.srcObject = stream;
+
+    // Đảm bảo audio phát ra
+    let remoteAudio = document.getElementById('family-remote-audio');
+    if (!remoteAudio) {
+      remoteAudio = document.createElement('audio');
+      remoteAudio.id = 'family-remote-audio';
+      remoteAudio.autoplay = true;
+      document.body.appendChild(remoteAudio);
+    }
+    remoteAudio.srcObject = stream;
+  },
+
+  toggleExpandFeed() {
+    const container = document.getElementById('live-feed-container');
+    if (!container) return;
+    container.style.aspectRatio = container.style.aspectRatio === '4/3' ? '16/9' : '4/3';
+  },
+
+  showSendMessage() {
+    App.showModal('💬 Gửi tin nhắn cho Bố', `
+      <div style="padding: 0 20px 20px;">
+        <p style="color:var(--color-text-secondary);margin-bottom:16px;font-size:0.9375rem;">
+          Tin nhắn sẽ được đọc to bằng giọng AI trên điện thoại của Bố
+        </p>
+        <textarea id="family-msg-input" placeholder="Ví dụ: Bố ơi, trời sắp mưa, bố về nhà sớm nhé!" 
+          style="width:100%;height:100px;border:2px solid var(--color-border);border-radius:12px;padding:12px;font-size:1rem;font-family:inherit;resize:none;"></textarea>
+        <button class="btn btn-primary btn-block btn-lg" style="margin-top:16px;" 
+          onclick="FamilyCallManager.doSendMessage();">📤 Gửi đến Bố</button>
+      </div>
+    `);
+  },
+
+  doSendMessage() {
+    const input = document.getElementById('family-msg-input');
+    const text = input?.value?.trim();
+    if (!text) {
+      if (input) input.style.borderColor = 'var(--color-danger)';
+      return;
+    }
+
+    // Gửi qua BroadcastChannel → user tab sẽ nhận + TTS đọc
+    if (typeof BlindNavRTC !== 'undefined') {
+      BlindNavRTC.send({
+        type: 'text-message',
+        sender: 'Con Lan',
+        text: text
+      });
+    }
+
+    App.closeModal();
+    App.showToast('✅ Đã gửi tin nhắn cho Bố — Sẽ được đọc to trên điện thoại', 'success');
+  }
+};
+
+// Initialize after app loads
+const _origAppInit = App.init.bind(App);
+App.init = function() {
+  _origAppInit();
+  FamilyCallManager.init();
+};
+</script>
+
+</body>
+</html>

@@ -1,0 +1,342 @@
+/* ============================================
+   BlindNav Dark Theme
+   Samsung Solve for Tomorrow 2026
+   ============================================ */
+
+/* ── Smooth theme transition ── */
+html[data-theme] {
+  transition: background-color 0.35s ease, color 0.35s ease;
+}
+
+html[data-theme] body,
+html[data-theme] .app-header,
+html[data-theme] .tab-bar,
+html[data-theme] .screen,
+html[data-theme] .modal-content,
+html[data-theme] .card,
+html[data-theme] .settings-group,
+html[data-theme] .desktop-sidebar {
+  transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease;
+}
+
+/* ═══════════════════════════════════════════
+   DARK MODE VARIABLES
+   ═══════════════════════════════════════════ */
+[data-theme="dark"] {
+  /* ── Primary Colors (adjusted for dark) ── */
+  --color-primary: #4A9EFF;
+  --color-primary-dark: #2979FF;
+  --color-primary-light: rgba(74, 158, 255, 0.15);
+  --color-primary-hover: #6BB2FF;
+
+  /* ── Status Colors ── */
+  --color-danger: #FF6B6B;
+  --color-danger-dark: #FF4B4B;
+  --color-danger-light: rgba(255, 107, 107, 0.15);
+  --color-danger-bg: rgba(255, 107, 107, 0.08);
+  --color-success: #4ADE80;
+  --color-success-dark: #22C55E;
+  --color-success-light: rgba(74, 222, 128, 0.15);
+  --color-warning: #FBBF24;
+  --color-warning-dark: #F59E0B;
+  --color-warning-light: rgba(251, 191, 36, 0.15);
+  --color-info: #60A5FA;
+
+  /* ── Neutral Colors ── */
+  --color-bg: #0F1117;
+  --color-surface: #1A1D27;
+  --color-surface-hover: #252836;
+  --color-border: #2D3142;
+  --color-border-light: #232636;
+  --color-text-primary: #E8ECF4;
+  --color-text-secondary: #9BA3B5;
+  --color-text-tertiary: #636B80;
+  --color-text-inverse: #FFFFFF;
+  --color-overlay: rgba(0, 0, 0, 0.7);
+  --color-overlay-heavy: rgba(0, 0, 0, 0.85);
+
+  /* ── Glassmorphism ── */
+  --glass-bg: rgba(26, 29, 39, 0.88);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: blur(24px);
+
+  /* ── Shadows (stronger for dark bg) ── */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.6);
+  --shadow-glow-primary: 0 0 25px rgba(74, 158, 255, 0.25);
+  --shadow-glow-danger: 0 0 30px rgba(255, 107, 107, 0.3);
+  --shadow-glow-success: 0 0 20px rgba(74, 222, 128, 0.25);
+  --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* ═══════════════════════════════════════════
+   DARK MODE COMPONENT OVERRIDES
+   ═══════════════════════════════════════════ */
+
+/* ── Inputs & Forms ── */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background-color: #252836;
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+/* ── Volume Slider ── */
+[data-theme="dark"] .volume-slider {
+  background: #2D3142;
+}
+
+[data-theme="dark"] .volume-slider::-webkit-slider-runnable-track {
+  background: #2D3142;
+}
+
+/* ── Toggle Switch ── */
+[data-theme="dark"] .toggle-slider {
+  background: #3D4155;
+}
+
+/* ── Header ── */
+[data-theme="dark"] .header-btn {
+  background: #252836;
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .header-btn:hover,
+[data-theme="dark"] .header-btn:active {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+/* ── Desktop Sidebar ── */
+[data-theme="dark"] .desktop-sidebar {
+  background: #13151E;
+  border-right-color: var(--color-border);
+}
+
+[data-theme="dark"] .sidebar-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .sidebar-item.active {
+  background: var(--color-primary-light);
+}
+
+/* ── Tab Bar ── */
+[data-theme="dark"] .tab-bar {
+  background: rgba(26, 29, 39, 0.95);
+  border-top-color: var(--color-border);
+}
+
+/* ── Map Container ── */
+[data-theme="dark"] .tracking-map-container,
+[data-theme="dark"] .community-map-container {
+  border-color: var(--color-border);
+}
+
+/* ── Glasses Status Bar ── */
+[data-theme="dark"] .glasses-status-bar {
+  background: #252836;
+}
+
+/* ── Location Info ── */
+[data-theme="dark"] .location-info {
+  background: var(--color-surface);
+}
+
+/* ── Quick Actions ── */
+[data-theme="dark"] .quick-action-item {
+  background: #252836;
+}
+
+[data-theme="dark"] .quick-action-item:hover {
+  background: #2D3142;
+}
+
+/* ── Route Cards ── */
+[data-theme="dark"] .route-card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+/* ── SOS Cards ── */
+[data-theme="dark"] .sos-safe-card {
+  background: rgba(74, 222, 128, 0.08);
+  border-color: rgba(74, 222, 128, 0.2);
+}
+
+[data-theme="dark"] .sos-event-item {
+  background: #252836;
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .sos-demo-btn {
+  background: rgba(255, 107, 107, 0.12);
+  color: var(--color-danger);
+  border-color: rgba(255, 107, 107, 0.3);
+}
+
+[data-theme="dark"] .sos-demo-btn:hover {
+  background: rgba(255, 107, 107, 0.2);
+}
+
+/* ── SOS Alert Overlay ── */
+[data-theme="dark"] .sos-alert-overlay {
+  background: linear-gradient(180deg, #1A0505 0%, #2D0A0A 30%, #1A1D27 100%);
+}
+
+/* ── Stats ── */
+[data-theme="dark"] .stat-metric {
+  background: #252836;
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .daily-chart,
+[data-theme="dark"] .frequent-places,
+[data-theme="dark"] .time-distribution {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .weekly-report {
+  background: linear-gradient(135deg, rgba(74, 158, 255, 0.1), rgba(74, 222, 128, 0.08));
+  border-color: var(--color-border);
+}
+
+/* ── Community ── */
+[data-theme="dark"] .report-card {
+  background: #252836;
+  border-color: var(--color-border);
+}
+
+/* ── Settings ── */
+[data-theme="dark"] .settings-profile {
+  background: #252836;
+}
+
+[data-theme="dark"] .settings-group {
+  background: #252836;
+  border-color: var(--color-border);
+}
+
+[data-theme="dark"] .settings-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="dark"] .ai-feature-row {
+  border-bottom-color: var(--color-border);
+}
+
+/* ── Connection Lost Banner ── */
+[data-theme="dark"] .connection-lost-banner {
+  background: rgba(255, 107, 107, 0.12);
+}
+
+/* ── Check-in Card ── */
+[data-theme="dark"] .checkin-card {
+  background: #252836;
+  border-color: var(--color-border);
+}
+
+/* ── Emergency Contacts ── */
+[data-theme="dark"] .contact-item {
+  background: #252836;
+  border-color: var(--color-border);
+}
+
+/* ── Modal ── */
+[data-theme="dark"] .modal-content {
+  background: #1A1D27;
+}
+
+[data-theme="dark"] .modal-close {
+  background: #252836;
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .modal-handle {
+  background: #3D4155;
+}
+
+/* ── Hardware Indicator ── */
+[data-theme="dark"] .hw-indicator {
+  background: #252836;
+  border-color: var(--color-border);
+}
+
+/* ── Medical Tags ── */
+[data-theme="dark"] .medical-tag {
+  background: rgba(255, 107, 107, 0.12);
+  color: var(--color-danger);
+}
+
+/* ── Period Selector (Stats) ── */
+[data-theme="dark"] .period-btn {
+  background: #252836;
+  color: var(--color-text-secondary);
+}
+
+[data-theme="dark"] .period-btn.active {
+  background: var(--color-primary);
+  color: white;
+}
+
+/* ── Chart Bars ── */
+[data-theme="dark"] .chart-bar-bg {
+  background: #2D3142;
+}
+
+/* ── Scrollbar (webkit) ── */
+[data-theme="dark"] ::-webkit-scrollbar {
+  width: 6px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: #1A1D27;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #3D4155;
+  border-radius: 3px;
+}
+
+/* ── Toast ── */
+[data-theme="dark"] .toast {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* ── Back Button ── */
+[data-theme="dark"] .back-btn {
+  color: var(--color-text-primary);
+}
+
+/* ── Map Center Button ── */
+[data-theme="dark"] .map-center-btn,
+[data-theme="dark"] .community-fab {
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Settings App Info ── */
+[data-theme="dark"] .settings-app-info {
+  color: var(--color-text-tertiary);
+}
+
+/* ── SOS Medical Section ── */
+[data-theme="dark"] .sos-medical {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ── Screen Header ── */
+[data-theme="dark"] .screen-header {
+  background: var(--color-surface);
+}

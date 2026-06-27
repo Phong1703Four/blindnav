@@ -1,0 +1,854 @@
+/* ============================================
+   BlindNav User App — Giao diện Người Mù
+   Camera + AI Navigation + Voice + SOS + Call
+   Samsung Solve for Tomorrow 2026
+   ============================================ */
+
+const UserApp = {
+  // ── State ──
+  cameraStream: null,
+  isRecording: false,
+  mediaRecorder: null,
+  recordedChunks: [],
+  recordingTimer: null,
+  recordingSeconds: 0,
+  obstacleInterval: null,
+  navInterval: null,
+  messagesPanelOpen: false,
+  messages: [],
+  sosActive: false,
+  cameraActive: false,
+  currentRouteStep: 0,
+
+  // ═══════════════════════════════════════════
+  // INITIALIZATION
+  // ═══════════════════════════════════════════
+  init() {
+    console.log('🕶️ BlindNav User Interface starting...');
+
+    this.setupCamera();
+    this.setupControls();
+    this.setupVolumeButtons();
+    this.setupMessages();
+    this.startClock();
+
+    // Greet after a moment
+    setTimeout(() => {
+      this.speak('Xin chào. BlindNav đã sẵn sàng. Camera đang quét môi trường.');
+    }, 1500);
+
+    // Start obstacle + navigation after 3s
+    setTimeout(() => {
+      this.startObstacleDetection();
+      this.startNavigation();
+    }, 3000);
+
+    // Initialize WebRTC + BroadcastChannel
+    if (typeof BlindNavRTC !== 'undefined') {
+      BlindNavRTC.init('user');
+
+      BlindNavRTC.onCallStateChange = (state) => this.onCallStateChange(state);
+      BlindNavRTC.onCallTimer = (time) => this.updateCallTimer(time);
+      BlindNavRTC.onRemoteStream = (stream) => this.onRemoteStream(stream);
+
+      // Nhận tin nhắn từ người thân
+      BlindNavRTC.onMessage = (data) => {
+        if (data.type === 'text-message') {
+          this.onMessageReceived({ sender: data.sender, text: data.text });
+        }
+      };
+
+      // Nhận SOS cancel từ người thân
+      BlindNavRTC.onSOSAlert = (data) => {
+        if (data.type === 'sos-resolved') {
+          this.onSOSResolved();
+        }
+      };
+    }
+
+    // Firebase init (if configured)
+    if (typeof FirebaseConfig !== 'undefined') {
+      FirebaseConfig.init();
+    }
+  },
+
+  // ═══════════════════════════════════════════
+  // CAMERA
+  // ═══════════════════════════════════════════
+  async setupCamera() {
+    const video = document.getElementById('camera-video');
+    const placeholder = document.getElementById('camera-placeholder');
+
+    try {
+      this.cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      });
+
+      if (video) {
+        video.srcObject = this.cameraStream;
+        video.play();
+      }
+      if (placeholder) placeholder.style.display = 'none';
+      this.cameraActive = true;
+
+      // Share camera feed cho người thân
+      setTimeout(() => {
+        if (typeof BlindNavRTC !== 'undefined') {
+          BlindNavRTC.shareCameraFeed(this.cameraStream);
+        }
+      }, 2000);
+
+    } catch (err) {
+      console.warn('📷 Camera error:', err);
+      if (placeholder) {
+        placeholder.querySelector('.camera-placeholder-text').textContent =
+          'Không thể mở camera. Vui lòng cấp quyền camera.';
+      }
+    }
+  },
+
+  // ═══════════════════════════════════════════
+  // AI OBSTACLE DETECTION — Mô phỏng chính xác
+  // ═══════════════════════════════════════════
+  startObstacleDetection() {
+    // Kịch bản đi bộ thực tế: tuần tự, không random loạn
+    const scenario = [
+      {
+        obstacles: [
+          { name: 'Xe máy đỗ', distance: '3 mét', direction: 'bên trái đường', type: 'warning',
+            box: { top: '40%', left: '5%', width: '140px', height: '100px' } }
+        ],
+        speech: 'Có xe máy đỗ bên trái đường, cách 3 mét. Đi tiếp bên phải.',
+        alert: '🏍️ Xe máy đỗ bên trái, cách 3m'
+      },
+      {
+        obstacles: [
+          { name: 'Cột điện', distance: '2 mét', direction: 'phía trước bên phải', type: 'danger',
+            box: { top: '20%', left: '65%', width: '50px', height: '200px' } }
+        ],
+        speech: 'Cảnh báo! Cột điện phía trước bên phải, cách 2 mét. Tránh sang trái.',
+        alert: '⚡ Cột điện bên phải, cách 2m — Tránh trái!'
+      },
+      {
+        obstacles: [],
+        speech: 'Đường phía trước thông thoáng. Tiếp tục đi thẳng.',
+        alert: '✅ Đường thông thoáng'
+      },
+      {
+        obstacles: [
+          { name: 'Bậc thang', distance: '1.5 mét', direction: 'phía trước', type: 'danger',
+            box: { top: '70%', left: '15%', width: '250px', height: '40px' } }
+        ],
+        speech: 'Cẩn thận! Bậc thang phía trước, cách 1 mét rưỡi. Bước cao lên.',
+        alert: '🪜 Bậc thang phía trước, cách 1.5m!'
+      },
+      {
+        obstacles: [
+          { name: 'Người đi bộ', distance: '4 mét', direction: 'đi ngược chiều', type: 'warning',
+            box: { top: '15%', left: '40%', width: '65px', height: '170px' } }
+        ],
+        speech: 'Có người đi bộ ngược chiều, cách 4 mét. Đi sát lề phải.',
+        alert: '🚶 Người đi bộ phía trước, cách 4m'
+      },
+      {
+        obstacles: [
+          { name: 'Hố ga mở', distance: '1 mét', direction: 'ngay trước mặt', type: 'danger',
+            box: { top: '65%', left: '35%', width: '100px', height: '60px' } }
+        ],
+        speech: 'NGUY HIỂM! Hố ga mở ngay trước mặt, cách 1 mét! Dừng lại và đi vòng sang phải!',
+        alert: '🚫 HỐ GA MỞ ngay trước mặt — DỪNG LẠI!'
+      },
+      {
+        obstacles: [],
+        speech: 'Đã qua vùng nguy hiểm. Đường an toàn. Tiếp tục đi thẳng.',
+        alert: '✅ Đã an toàn — Tiếp tục đi thẳng'
+      },
+      {
+        obstacles: [
+          { name: 'Cành cây thấp', distance: '2 mét', direction: 'phía trên đầu', type: 'warning',
+            box: { top: '2%', left: '20%', width: '200px', height: '45px' } }
+        ],
+        speech: 'Cành cây thấp phía trên đầu, cách 2 mét. Cúi đầu xuống khi đi qua.',
+        alert: '🌳 Cành cây thấp phía trên — Cúi đầu!'
+      },
+      {
+        obstacles: [
+          { name: 'Ghế đá', distance: '2.5 mét', direction: 'bên phải', type: 'safe',
+            box: { top: '50%', left: '68%', width: '110px', height: '70px' } },
+          { name: 'Biển báo', distance: '3 mét', direction: 'bên phải', type: 'safe',
+            box: { top: '10%', left: '75%', width: '50px', height: '80px' } }
+        ],
+        speech: 'Ghế đá và biển báo bên phải đường. Đường bên trái thông thoáng.',
+        alert: 'ℹ️ Ghế đá + Biển báo bên phải'
+      },
+      {
+        obstacles: [
+          { name: 'Đèn đỏ', distance: '5 mét', direction: 'ngã tư phía trước', type: 'danger',
+            box: { top: '5%', left: '45%', width: '40px', height: '60px' } }
+        ],
+        speech: 'Ngã tư phía trước. Đèn đang đỏ. Dừng lại và chờ đèn xanh.',
+        alert: '🔴 Đèn đỏ — Dừng lại chờ đèn xanh!'
+      }
+    ];
+
+    let step = 0;
+    this.obstacleInterval = setInterval(() => {
+      const scene = scenario[step % scenario.length];
+
+      // Hiển thị bounding boxes
+      this.showObstacles(scene.obstacles);
+
+      // Hiển thị alert banner
+      const alertType = scene.obstacles.length === 0 ? 'success' :
+        scene.obstacles.some(o => o.type === 'danger') ? 'danger' : 'warning';
+      this.showAlert(scene.alert, alertType);
+
+      // TTS đọc cảnh báo
+      this.speak(scene.speech);
+
+      // Rung nếu nguy hiểm
+      if (alertType === 'danger' && navigator.vibrate) {
+        navigator.vibrate([300, 100, 300]);
+      }
+
+      // Gửi info cho người thân
+      if (typeof BlindNavRTC !== 'undefined') {
+        BlindNavRTC.send({
+          type: 'obstacle-update',
+          obstacles: scene.obstacles.map(o => ({ name: o.name, distance: o.distance, direction: o.direction, type: o.type })),
+          alert: scene.alert
+        });
+      }
+
+      step++;
+    }, 8000); // 8 giây/lần — đủ thời gian đọc + phản ứng
+  },
+
+  showObstacles(obstacles) {
+    const overlay = document.getElementById('obstacle-overlay');
+    if (!overlay) return;
+    overlay.innerHTML = '';
+
+    obstacles.forEach(obs => {
+      const box = document.createElement('div');
+      box.className = `obstacle-box ${obs.type}`;
+      box.style.top = obs.box.top;
+      box.style.left = obs.box.left;
+      box.style.width = obs.box.width;
+      box.style.height = obs.box.height;
+      box.innerHTML = `
+        <div class="obstacle-label">${obs.name}</div>
+        <div class="obstacle-distance">${obs.distance}</div>
+      `;
+      overlay.appendChild(box);
+    });
+
+    // Xóa sau 6 giây
+    setTimeout(() => { if (overlay) overlay.innerHTML = ''; }, 6500);
+  },
+
+  showAlert(text, type = 'warning') {
+    const banner = document.getElementById('alert-banner');
+    if (!banner) return;
+    banner.textContent = text;
+    banner.className = `alert-banner active ${type}`;
+    clearTimeout(this._alertTimeout);
+    this._alertTimeout = setTimeout(() => banner.classList.remove('active'), 6000);
+  },
+
+  // ═══════════════════════════════════════════
+  // NAVIGATION — Chỉ đường chính xác tiếng Việt
+  // ═══════════════════════════════════════════
+  startNavigation() {
+    // Lộ trình cố định: Nhà → Công viên Thống Nhất
+    const route = [
+      { address: '12 Hàng Bông, Hoàn Kiếm, Hà Nội', direction: 'Bắt đầu đi. Đi thẳng trên đường Hàng Bông, hướng Đông', meters: 0 },
+      { address: 'Hàng Bông, gần ngã tư Phủ Doãn', direction: 'Tiếp tục đi thẳng 50 mét. Vỉa hè bên phải', meters: 50 },
+      { address: 'Ngã tư Hàng Bông - Phủ Doãn', direction: 'Đến ngã tư. Rẽ phải vào đường Phủ Doãn', meters: 120 },
+      { address: '25 Phủ Doãn, Hoàn Kiếm', direction: 'Đi thẳng trên đường Phủ Doãn. Vỉa hè bên trái', meters: 200 },
+      { address: 'Phủ Doãn, gần Bệnh viện Việt Đức', direction: 'Đi thẳng 80 mét. Bệnh viện Việt Đức bên phải', meters: 300 },
+      { address: 'Ngã tư Phủ Doãn - Tràng Thi', direction: 'Đến ngã tư. Rẽ trái vào Tràng Thi. Chờ đèn xanh để qua đường', meters: 400 },
+      { address: 'Tràng Thi, Hoàn Kiếm', direction: 'Qua đường an toàn. Đi thẳng trên Tràng Thi', meters: 450 },
+      { address: 'Tràng Thi, gần Cửa Nam', direction: 'Tiếp tục đi thẳng 100 mét. Cửa hàng bên phải', meters: 550 },
+      { address: 'Ngã tư Cửa Nam', direction: 'Đến ngã tư Cửa Nam. Đi thẳng qua đường. Cẩn thận xe cộ', meters: 650 },
+      { address: 'Đường Trần Hưng Đạo', direction: 'Rẽ phải vào Trần Hưng Đạo. Đi thẳng 200 mét', meters: 700 },
+      { address: 'Gần Công viên Thống Nhất', direction: 'Gần đến nơi. Cổng công viên bên trái, cách 50 mét', meters: 900 },
+      { address: 'Cổng Công viên Thống Nhất', direction: 'Đã đến Công viên Thống Nhất. Cổng vào bên trái. Chúc bố đi dạo vui vẻ!', meters: 950 }
+    ];
+
+    this.currentRouteStep = 0;
+
+    const updateNav = () => {
+      const step = route[this.currentRouteStep % route.length];
+      const dirText = document.getElementById('nav-direction-text');
+      const locText = document.getElementById('nav-location-text');
+
+      if (dirText) dirText.textContent = step.direction;
+      if (locText) locText.textContent = `📍 ${step.address}`;
+
+      // Đọc chỉ đường
+      this.speak(step.direction);
+
+      // Gửi vị trí cho người thân
+      if (typeof BlindNavRTC !== 'undefined') {
+        BlindNavRTC.send({
+          type: 'location-update',
+          address: step.address,
+          direction: step.direction,
+          meters: step.meters
+        });
+      }
+
+      this.currentRouteStep++;
+
+      // Nếu hết route, quay lại đầu
+      if (this.currentRouteStep >= route.length) {
+        this.currentRouteStep = 0;
+      }
+    };
+
+    // Hiển thị điểm đầu tiên (không đọc)
+    const first = route[0];
+    const dirText = document.getElementById('nav-direction-text');
+    const locText = document.getElementById('nav-location-text');
+    if (dirText) dirText.textContent = first.direction;
+    if (locText) locText.textContent = `📍 ${first.address}`;
+    this.currentRouteStep = 1;
+
+    // Cập nhật mỗi 20 giây
+    this.navInterval = setInterval(updateNav, 20000);
+  },
+
+  // ═══════════════════════════════════════════
+  // VOICE RECORDING
+  // ═══════════════════════════════════════════
+  async startRecording() {
+    if (this.isRecording) return;
+    try {
+      const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.mediaRecorder = new MediaRecorder(audioStream);
+      this.recordedChunks = [];
+
+      this.mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) this.recordedChunks.push(e.data);
+      };
+
+      this.mediaRecorder.onstop = () => {
+        const blob = new Blob(this.recordedChunks, { type: 'audio/webm' });
+        this.sendVoiceMessage(blob);
+        audioStream.getTracks().forEach(t => t.stop());
+      };
+
+      this.mediaRecorder.start();
+      this.isRecording = true;
+      this.recordingSeconds = 0;
+
+      const overlay = document.getElementById('recording-overlay');
+      if (overlay) overlay.classList.add('active');
+      const recordBtn = document.getElementById('record-btn');
+      if (recordBtn) recordBtn.classList.add('recording');
+
+      this.recordingTimer = setInterval(() => {
+        this.recordingSeconds++;
+        const timerEl = document.getElementById('recording-timer');
+        if (timerEl) timerEl.textContent = this._formatTime(this.recordingSeconds);
+      }, 1000);
+
+      this.speak('Đang ghi âm. Nói tin nhắn của bạn.');
+      if (navigator.vibrate) navigator.vibrate(100);
+    } catch (err) {
+      console.error('🎤 Recording error:', err);
+      this.speak('Không thể ghi âm. Vui lòng cấp quyền microphone.');
+    }
+  },
+
+  stopRecording() {
+    if (!this.isRecording || !this.mediaRecorder) return;
+    this.mediaRecorder.stop();
+    this.isRecording = false;
+
+    const overlay = document.getElementById('recording-overlay');
+    if (overlay) overlay.classList.remove('active');
+    const recordBtn = document.getElementById('record-btn');
+    if (recordBtn) recordBtn.classList.remove('recording');
+    clearInterval(this.recordingTimer);
+    if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
+  },
+
+  toggleRecording() {
+    if (this.isRecording) this.stopRecording();
+    else this.startRecording();
+  },
+
+  sendVoiceMessage(blob) {
+    const audioUrl = URL.createObjectURL(blob);
+    const msg = {
+      id: Date.now(),
+      type: 'audio',
+      sender: 'Bạn',
+      audioUrl: audioUrl,
+      duration: this.recordingSeconds,
+      timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      sent: true
+    };
+    this.messages.push(msg);
+    this.renderMessages();
+
+    // Gửi thông báo cho người thân qua BroadcastChannel
+    if (typeof BlindNavRTC !== 'undefined') {
+      // Chuyển blob sang base64 để gửi qua channel
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = () => {
+        BlindNavRTC.send({
+          type: 'voice-message',
+          sender: 'Bố',
+          audioData: reader.result,
+          duration: this.recordingSeconds,
+          timestamp: msg.timestamp
+        });
+      };
+    }
+
+    this.speak(`Đã gửi tin nhắn ${this.recordingSeconds} giây cho người thân.`);
+  },
+
+  // ═══════════════════════════════════════════
+  // INCOMING MESSAGES
+  // ═══════════════════════════════════════════
+  onMessageReceived(msg) {
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 100]);
+    if (typeof AudioManager !== 'undefined') AudioManager.playNotification('info');
+
+    this.showMessageToast(msg.sender || 'Con Lan', msg.text || 'Tin nhắn mới');
+
+    setTimeout(() => {
+      this.speak(`Tin nhắn từ ${msg.sender || 'người thân'}. ${msg.text || ''}`);
+    }, 600);
+
+    this.messages.push({
+      id: Date.now(),
+      type: 'text',
+      sender: msg.sender || 'Con Lan',
+      text: msg.text,
+      timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      sent: false
+    });
+    this.renderMessages();
+  },
+
+  showMessageToast(sender, text) {
+    const toast = document.getElementById('msg-toast');
+    if (!toast) return;
+    toast.querySelector('.msg-toast-sender').textContent = `💬 ${sender}`;
+    toast.querySelector('.msg-toast-text').textContent = text;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 5000);
+  },
+
+  // ═══════════════════════════════════════════
+  // SOS MODULE
+  // ═══════════════════════════════════════════
+  async triggerSOS() {
+    if (this.sosActive) return;
+    this.sosActive = true;
+
+    if (navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 500]);
+
+    const overlay = document.getElementById('sos-overlay');
+    if (overlay) overlay.classList.add('active');
+
+    if (typeof AudioManager !== 'undefined') AudioManager.playSOSAlert();
+
+    this.speak('SOS đã được kích hoạt. Đang liên hệ người thân.');
+
+    // Gửi SOS cho người thân qua BroadcastChannel
+    if (typeof BlindNavRTC !== 'undefined') {
+      BlindNavRTC.send({
+        type: 'sos-alert',
+        address: document.getElementById('nav-location-text')?.textContent?.replace('📍 ', '') || 'Hàng Bông, Hoàn Kiếm',
+        timestamp: Date.now()
+      });
+    }
+
+    // Step 1: GPS
+    this.updateSOSStep('sos-step-1', 'active', '📍 Đang gửi vị trí GPS...');
+
+    setTimeout(() => {
+      this.updateSOSStep('sos-step-1', 'done', '✅ Đã gửi vị trí GPS');
+      this.updateSOSStep('sos-step-2', 'active', '📞 Đang gọi cho Con Lan...');
+
+      // Step 2: Gọi video thật
+      setTimeout(() => this.startSOSCall(), 1500);
+    }, 2000);
+  },
+
+  async startSOSCall() {
+    try {
+      const callStream = await navigator.mediaDevices.getUserMedia({
+        video: true, audio: true
+      });
+
+      // Hiển thị call UI
+      const callOverlay = document.getElementById('call-overlay');
+      if (callOverlay) callOverlay.classList.add('active');
+
+      if (typeof BlindNavRTC !== 'undefined') {
+        BlindNavRTC.startCall(callStream);
+      }
+
+      this.updateSOSStep('sos-step-2', 'done', '✅ Đang gọi cho Con Lan');
+      this.updateSOSStep('sos-step-3', 'done', '🔊 Ghi âm môi trường đang bật');
+
+      this.speak('Đang kết nối cuộc gọi với Con Lan.');
+    } catch (err) {
+      console.error('SOS call error:', err);
+      this.updateSOSStep('sos-step-2', 'done', '⚠️ Không thể gọi video — đã gửi SMS');
+      this.updateSOSStep('sos-step-3', 'done', '✅ Đã thông báo người thân');
+    }
+  },
+
+  updateSOSStep(stepId, status, text) {
+    const step = document.getElementById(stepId);
+    if (!step) return;
+    step.className = `step ${status}`;
+    step.innerHTML = text;
+  },
+
+  cancelSOS() {
+    this.sosActive = false;
+    const overlay = document.getElementById('sos-overlay');
+    if (overlay) overlay.classList.remove('active');
+
+    if (typeof AudioManager !== 'undefined') AudioManager.stopSOSAlert();
+
+    // Thông báo người thân
+    if (typeof BlindNavRTC !== 'undefined') {
+      BlindNavRTC.send({ type: 'sos-cancel' });
+    }
+
+    this.speak('SOS đã được hủy. Bạn an toàn.');
+  },
+
+  onSOSResolved() {
+    this.sosActive = false;
+    const overlay = document.getElementById('sos-overlay');
+    if (overlay) overlay.classList.remove('active');
+    if (typeof AudioManager !== 'undefined') AudioManager.stopSOSAlert();
+    this.speak('Người thân đã xác nhận bạn an toàn.');
+  },
+
+  // ═══════════════════════════════════════════
+  // CALL MODULE
+  // ═══════════════════════════════════════════
+  async callFamily() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true, audio: true
+      });
+
+      const callOverlay = document.getElementById('call-overlay');
+      if (callOverlay) callOverlay.classList.add('active');
+
+      if (typeof BlindNavRTC !== 'undefined') {
+        BlindNavRTC.startCall(stream);
+      }
+
+      this.speak('Đang gọi cho Con Lan.');
+    } catch (err) {
+      this.speak('Không thể bắt đầu cuộc gọi. Vui lòng cấp quyền camera và micro.');
+    }
+  },
+
+  answerIncomingCall() {
+    clearTimeout(this._autoAnswerTimeout);
+    clearInterval(this._callVibrate);
+
+    const incomingOverlay = document.getElementById('incoming-call');
+    if (incomingOverlay) incomingOverlay.classList.remove('active');
+
+    if (typeof AudioManager !== 'undefined') AudioManager.stopRingtone();
+
+    const callOverlay = document.getElementById('call-overlay');
+    if (callOverlay) callOverlay.classList.add('active');
+
+    // Answer WebRTC call
+    if (typeof BlindNavRTC !== 'undefined' && BlindNavRTC._incomingOfferSdp) {
+      BlindNavRTC.answerCall(BlindNavRTC._incomingOfferSdp);
+    }
+
+    this.speak('Cuộc gọi đã kết nối.');
+  },
+
+  rejectIncomingCall() {
+    clearTimeout(this._autoAnswerTimeout);
+    clearInterval(this._callVibrate);
+
+    const overlay = document.getElementById('incoming-call');
+    if (overlay) overlay.classList.remove('active');
+
+    if (typeof AudioManager !== 'undefined') AudioManager.stopRingtone();
+    if (navigator.vibrate) navigator.vibrate(0);
+
+    if (typeof BlindNavRTC !== 'undefined') {
+      BlindNavRTC.send({ type: 'call-hangup' });
+    }
+
+    this.speak('Đã từ chối cuộc gọi.');
+  },
+
+  endCall() {
+    const callOverlay = document.getElementById('call-overlay');
+    if (callOverlay) callOverlay.classList.remove('active');
+
+    if (typeof BlindNavRTC !== 'undefined') BlindNavRTC.endCall();
+
+    this.speak('Cuộc gọi đã kết thúc.');
+  },
+
+  onCallStateChange(state) {
+    const statusEl = document.getElementById('call-status-text');
+    switch (state) {
+      case 'calling': if (statusEl) statusEl.textContent = 'Đang gọi...'; break;
+      case 'ringing':
+        if (statusEl) statusEl.textContent = 'Đang đổ chuông...';
+        // Nếu là user nhận cuộc gọi đến
+        if (BlindNavRTC._incomingOfferSdp && !document.getElementById('call-overlay')?.classList.contains('active')) {
+          this.showIncomingCall({ callerName: 'Con Lan' });
+        }
+        break;
+      case 'connected':
+        if (statusEl) statusEl.textContent = 'Đã kết nối';
+        if (typeof AudioManager !== 'undefined') AudioManager.playCallConnect();
+        break;
+      case 'ended':
+        if (statusEl) statusEl.textContent = 'Cuộc gọi đã kết thúc';
+        const callOverlay = document.getElementById('call-overlay');
+        if (callOverlay) setTimeout(() => callOverlay.classList.remove('active'), 1500);
+        break;
+    }
+  },
+
+  showIncomingCall(callData) {
+    const overlay = document.getElementById('incoming-call');
+    if (!overlay) return;
+    overlay.classList.add('active');
+
+    if (typeof AudioManager !== 'undefined') AudioManager.playRingtone();
+    if (navigator.vibrate) {
+      this._callVibrate = setInterval(() => navigator.vibrate([200, 100, 200, 300]), 2000);
+    }
+
+    this.speak(`Cuộc gọi đến từ ${callData.callerName || 'Con Lan'}. Chạm nút xanh để nghe.`);
+
+    // Auto-answer sau 8s
+    this._autoAnswerTimeout = setTimeout(() => this.answerIncomingCall(), 8000);
+  },
+
+  updateCallTimer(time) {
+    const timerEl = document.getElementById('call-timer');
+    if (timerEl) timerEl.textContent = time;
+  },
+
+  onRemoteStream(stream) {
+    // Phát audio từ remote stream
+    let remoteAudio = document.getElementById('remote-audio');
+    if (!remoteAudio) {
+      remoteAudio = document.createElement('audio');
+      remoteAudio.id = 'remote-audio';
+      remoteAudio.autoplay = true;
+      document.body.appendChild(remoteAudio);
+    }
+    remoteAudio.srcObject = stream;
+  },
+
+  // ═══════════════════════════════════════════
+  // CONTROLS & EVENTS
+  // ═══════════════════════════════════════════
+  setupControls() {
+    const recordBtn = document.getElementById('record-btn');
+    if (recordBtn) recordBtn.addEventListener('click', () => this.toggleRecording());
+
+    // SOS: click on desktop, long-press on mobile
+    const sosBtn = document.getElementById('sos-btn');
+    if (sosBtn) {
+      let pressTimer;
+      const startSOS = (e) => {
+        e.preventDefault();
+        sosBtn.classList.add('active');
+        pressTimer = setTimeout(() => this.triggerSOS(), 1000);
+      };
+      const cancelSOS = () => {
+        clearTimeout(pressTimer);
+        sosBtn.classList.remove('active');
+      };
+      sosBtn.addEventListener('touchstart', startSOS);
+      sosBtn.addEventListener('mousedown', startSOS);
+      sosBtn.addEventListener('touchend', cancelSOS);
+      sosBtn.addEventListener('mouseup', cancelSOS);
+      sosBtn.addEventListener('mouseleave', cancelSOS);
+    }
+
+    const sosCancelBtn = document.getElementById('sos-cancel-btn');
+    if (sosCancelBtn) sosCancelBtn.addEventListener('click', () => this.cancelSOS());
+
+    const recordStopBtn = document.getElementById('recording-stop-btn');
+    if (recordStopBtn) recordStopBtn.addEventListener('click', () => this.stopRecording());
+
+    const callBtn = document.getElementById('call-family-btn');
+    if (callBtn) callBtn.addEventListener('click', () => this.callFamily());
+
+    const endCallBtn = document.getElementById('end-call-btn');
+    if (endCallBtn) endCallBtn.addEventListener('click', () => this.endCall());
+
+    const msgBtn = document.getElementById('messages-btn');
+    if (msgBtn) msgBtn.addEventListener('click', () => this.toggleMessagesPanel());
+
+    const msgCloseBtn = document.getElementById('messages-panel-close');
+    if (msgCloseBtn) msgCloseBtn.addEventListener('click', () => this.toggleMessagesPanel());
+
+    const acceptCallBtn = document.getElementById('accept-call-btn');
+    if (acceptCallBtn) acceptCallBtn.addEventListener('click', () => this.answerIncomingCall());
+
+    const rejectCallBtn = document.getElementById('reject-call-btn');
+    if (rejectCallBtn) rejectCallBtn.addEventListener('click', () => this.rejectIncomingCall());
+
+    // Nav toggle
+    const navToggle = document.getElementById('nav-toggle-btn');
+    if (navToggle) {
+      navToggle.addEventListener('click', () => {
+        navToggle.classList.toggle('active');
+        const navInfo = document.getElementById('nav-info');
+        if (navInfo) navInfo.style.display = navToggle.classList.contains('active') ? 'flex' : 'none';
+        this.speak(navToggle.classList.contains('active') ? 'Bật chỉ đường' : 'Tắt chỉ đường');
+      });
+    }
+
+    // Location button - read current location
+    const locBtn = document.getElementById('location-btn');
+    if (locBtn) {
+      locBtn.addEventListener('click', () => {
+        const addr = document.getElementById('nav-location-text')?.textContent?.replace('📍 ', '') || '';
+        this.speak(`Bạn đang ở ${addr}`);
+      });
+    }
+  },
+
+  setupVolumeButtons() {
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'AudioVolumeUp' || e.keyCode === 175) {
+        e.preventDefault();
+        this.toggleRecording();
+      }
+      if (e.key === 'AudioVolumeDown' || e.keyCode === 174) {
+        e.preventDefault();
+        if (!this.sosActive) this.triggerSOS();
+      }
+    });
+  },
+
+  // ═══════════════════════════════════════════
+  // MESSAGES PANEL
+  // ═══════════════════════════════════════════
+  setupMessages() {
+    this.messages = [
+      { id: 1, type: 'text', sender: 'Con Lan', text: 'Bố ơi, con đang theo dõi bố trên app. Bố đi cẩn thận nhé! 💙', timestamp: '09:15', sent: false },
+      { id: 2, type: 'text', sender: 'Con Lan', text: 'Đường Hàng Bông đang sửa, bố đi đường Phủ Doãn nhé.', timestamp: '09:30', sent: false }
+    ];
+    this.renderMessages();
+  },
+
+  toggleMessagesPanel() {
+    this.messagesPanelOpen = !this.messagesPanelOpen;
+    const panel = document.getElementById('messages-panel');
+    if (panel) panel.classList.toggle('open', this.messagesPanelOpen);
+  },
+
+  renderMessages() {
+    const list = document.getElementById('messages-list');
+    if (!list) return;
+    list.innerHTML = this.messages.map(msg => {
+      if (msg.type === 'text') {
+        return `<div class="message-item ${msg.sent ? 'sent' : ''}">
+          <div class="message-item-header">
+            <span class="message-item-sender">${msg.sent ? '🎤 Bạn' : '💬 ' + msg.sender}</span>
+            <span class="message-item-time">${msg.timestamp}</span>
+          </div>
+          <div class="message-item-text">${msg.text}</div>
+        </div>`;
+      } else {
+        return `<div class="message-item ${msg.sent ? 'sent' : ''}">
+          <div class="message-item-header">
+            <span class="message-item-sender">${msg.sent ? '🎤 Bạn' : '💬 ' + msg.sender}</span>
+            <span class="message-item-time">${msg.timestamp}</span>
+          </div>
+          <div class="message-item-audio">
+            <button class="message-audio-play" onclick="UserApp.playAudioMessage('${msg.audioUrl || ''}')">▶</button>
+            <div class="message-audio-wave">${this._generateWaveBars()}</div>
+            <span class="message-audio-duration">${this._formatTime(msg.duration || 0)}</span>
+          </div>
+        </div>`;
+      }
+    }).join('');
+    list.scrollTop = list.scrollHeight;
+  },
+
+  playAudioMessage(url) {
+    if (url) {
+      const audio = new Audio(url);
+      audio.play();
+    } else {
+      this.speak('Phát lại tin nhắn thoại.');
+    }
+  },
+
+  _generateWaveBars() {
+    let bars = '';
+    for (let i = 0; i < 20; i++) {
+      bars += `<div class="bar" style="height:${Math.random() * 18 + 4}px;"></div>`;
+    }
+    return bars;
+  },
+
+  // ═══════════════════════════════════════════
+  // TTS
+  // ═══════════════════════════════════════════
+  speak(text) {
+    if (typeof AudioManager !== 'undefined') {
+      AudioManager.speak(text, 'vi');
+    } else if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'vi-VN';
+      u.rate = 0.9;
+      window.speechSynthesis.speak(u);
+    }
+  },
+
+  // ═══════════════════════════════════════════
+  // CLOCK
+  // ═══════════════════════════════════════════
+  startClock() {
+    const update = () => {
+      const now = new Date();
+      const el = document.getElementById('status-time');
+      if (el) el.textContent = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    };
+    update();
+    setInterval(update, 30000);
+  },
+
+  _formatTime(s) {
+    const m = Math.floor(s / 60).toString().padStart(2, '0');
+    const sec = (s % 60).toString().padStart(2, '0');
+    return `${m}:${sec}`;
+  }
+};
+
+// Boot
+document.addEventListener('DOMContentLoaded', () => UserApp.init());

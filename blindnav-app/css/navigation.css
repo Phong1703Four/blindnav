@@ -1,0 +1,210 @@
+/* ============================================
+   BlindNav Navigation — Bottom Tab Bar + Header
+   ============================================ */
+
+/* ── Bottom Tab Bar ── */
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: var(--tab-bar-height);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-top: 1px solid var(--color-border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 var(--space-2);
+  padding-bottom: var(--safe-area-bottom);
+  z-index: var(--z-navigation);
+}
+
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  flex: 1;
+  height: 100%;
+  padding: var(--space-2) 0;
+  color: var(--color-text-tertiary);
+  transition: all var(--transition-fast);
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.tab-item.active {
+  color: var(--color-primary);
+}
+
+.tab-item.active .tab-icon {
+  transform: scale(1.1);
+}
+
+.tab-item.active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 3px;
+  background: var(--color-primary);
+  border-radius: 0 0 var(--radius-full) var(--radius-full);
+}
+
+.tab-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+  transition: transform var(--transition-spring);
+}
+
+.tab-label {
+  font-size: 0.65rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.02em;
+}
+
+/* ── SOS Tab (Center) — Special Style ── */
+.tab-item.tab-sos {
+  position: relative;
+}
+
+.tab-sos-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #E24B4A, #C62828);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: var(--font-weight-extrabold);
+  box-shadow: 0 4px 15px rgba(226, 75, 74, 0.4);
+  position: relative;
+  margin-top: -20px;
+  transition: all var(--transition-fast);
+  border: 3px solid var(--color-surface);
+  letter-spacing: 0.5px;
+}
+
+.tab-sos-btn::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: rgba(226, 75, 74, 0.2);
+  animation: sos-pulse 2s infinite;
+}
+
+.tab-item.tab-sos.active .tab-sos-btn {
+  box-shadow: 0 4px 20px rgba(226, 75, 74, 0.6);
+  transform: scale(1.05);
+}
+
+.tab-item.tab-sos .tab-label {
+  color: var(--color-danger);
+  margin-top: 2px;
+}
+
+.tab-item.tab-sos.active::before {
+  display: none;
+}
+
+@keyframes sos-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.3); opacity: 0; }
+}
+
+/* ── Screen Title Bar ── */
+.screen-header {
+  padding: var(--space-5);
+  padding-bottom: var(--space-4);
+}
+
+.screen-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.screen-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ── Tab Period Selector ── */
+.period-selector {
+  display: flex;
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  padding: 3px;
+}
+
+.period-btn {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.period-btn.active {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* ── Community Access Button (on tracking screen) ── */
+.community-fab {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: var(--color-primary);
+  z-index: var(--z-base);
+  transition: all var(--transition-fast);
+  border: none;
+  cursor: pointer;
+}
+
+.community-fab:active {
+  transform: scale(0.9);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ── Back Button ── */
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-base);
+  border: none;
+  background: none;
+  cursor: pointer;
+}

@@ -1,0 +1,913 @@
+/* ============================================
+   BlindNav Responsive Design
+   Mobile-first → Tablet (768px+) → Desktop (1024px+) → Wide (1400px+)
+   ============================================ */
+
+/* ═══════════════════════════════════════════
+   MOBILE — Base (< 768px)
+   Make the app fluid on all phone sizes
+   ═══════════════════════════════════════════ */
+
+/* On small screens, remove the fixed 430px constraint so the app fills the screen */
+@media (max-width: 767px) {
+  #app {
+    max-width: 100%;
+    box-shadow: none;
+  }
+
+  .desktop-sidebar {
+    display: none !important;
+  }
+
+  .desktop-main {
+    width: 100%;
+  }
+
+  /* Community back button visible on mobile */
+  .back-btn {
+    display: flex;
+  }
+
+  /* Tab bar fills full width */
+  .tab-bar {
+    max-width: 100%;
+    left: 0;
+    transform: none;
+  }
+}
+
+/* Very small phones (<360px) — tighter spacing */
+@media (max-width: 359px) {
+  :root {
+    --font-size-base: 0.9375rem;
+  }
+
+  .tab-label {
+    font-size: 0.6rem;
+  }
+
+  .tab-sos-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 1.1rem;
+  }
+
+  .stats-metrics {
+    flex-direction: column;
+  }
+
+  .stat-metric {
+    flex: none;
+  }
+
+  .quick-action-text {
+    font-size: var(--font-size-sm);
+  }
+
+  .header-name {
+    font-size: var(--font-size-sm);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   TABLET — 768px – 1023px
+   Wider layouts, still bottom tab bar
+   ═══════════════════════════════════════════ */
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* ── Remove mobile constraint ── */
+  #app {
+    max-width: 100%;
+    box-shadow: none;
+  }
+
+  body {
+    background: var(--color-bg);
+  }
+
+  .desktop-sidebar {
+    display: none !important;
+  }
+
+  .desktop-main {
+    width: 100%;
+  }
+
+  /* ── Header ── */
+  .app-header {
+    padding: 0 var(--space-8);
+    height: 64px;
+  }
+
+  .header-name {
+    font-size: var(--font-size-lg);
+  }
+
+  /* ── Screen ── */
+  .screen {
+    padding-bottom: calc(var(--tab-bar-height) + var(--safe-area-bottom) + 24px);
+  }
+
+  .screen-header {
+    padding: var(--space-6) var(--space-8);
+  }
+
+  .screen-title {
+    font-size: var(--font-size-2xl);
+  }
+
+  /* ── Tracking Map ── */
+  .tracking-map-container {
+    height: 400px;
+  }
+
+  .glasses-status-bar {
+    padding: var(--space-3) var(--space-8);
+  }
+
+  .location-info {
+    padding: var(--space-5) var(--space-8);
+  }
+
+  .quick-actions {
+    padding: var(--space-2) var(--space-6);
+  }
+
+  /* ── Routes — 2 columns ── */
+  .route-list {
+    padding: 0 var(--space-6);
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+  }
+
+  .route-card {
+    margin-bottom: 0;
+  }
+
+  .add-route-btn {
+    grid-column: 1 / -1;
+    margin-top: 0;
+  }
+
+  /* ── SOS ── */
+  .sos-safe-card {
+    margin: var(--space-5) var(--space-6);
+    padding: var(--space-6);
+  }
+
+  .emergency-contacts {
+    margin: 0 var(--space-6) var(--space-4);
+  }
+
+  .checkin-card {
+    margin: 0 var(--space-6) var(--space-4);
+  }
+
+  .sos-history {
+    margin: 0 var(--space-6);
+  }
+
+  .sos-demo-btn {
+    margin: var(--space-5) var(--space-6);
+  }
+
+  .section-label {
+    padding-left: var(--space-6);
+    padding-right: var(--space-6);
+  }
+
+  /* ── Stats ── */
+  .stats-date-range {
+    padding: 0 var(--space-6);
+  }
+
+  .stats-metrics {
+    padding: 0 var(--space-6);
+  }
+
+  .daily-chart,
+  .frequent-places,
+  .time-distribution,
+  .weekly-report {
+    margin-left: var(--space-6);
+    margin-right: var(--space-6);
+  }
+
+  /* ── Settings ── */
+  .settings-profile {
+    margin: 0 var(--space-6) var(--space-4);
+  }
+
+  .settings-group {
+    margin: 0 var(--space-6);
+  }
+
+  .settings-section-title {
+    padding-left: var(--space-6);
+  }
+
+  /* ── Community ── */
+  .community-map-container {
+    height: 350px;
+  }
+
+  .report-list {
+    padding: var(--space-5) var(--space-6);
+  }
+
+  /* Community reports in 2 columns on tablet */
+  #community-reports {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+  }
+
+  #community-reports .report-card {
+    margin-bottom: 0;
+  }
+
+  /* ── Modal — Center on tablet ── */
+  .modal-overlay {
+    align-items: center;
+    padding: var(--space-4);
+  }
+
+  .modal-content {
+    border-radius: var(--radius-2xl);
+    max-width: 560px;
+    max-height: 80vh;
+  }
+
+  /* ── Tab Bar wider ── */
+  .tab-bar {
+    max-width: 100%;
+    left: 0;
+    transform: none;
+  }
+
+  /* ── SOS Alert Overlay — centered on tablet ── */
+  .sos-alert-overlay {
+    align-items: center;
+    padding: var(--space-6);
+  }
+
+  .sos-alert-overlay > * {
+    max-width: 560px;
+    width: 100%;
+  }
+
+  .sos-alert-header {
+    max-width: 560px;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   DESKTOP — 1024px+
+   Sidebar navigation, no bottom tab bar
+   ═══════════════════════════════════════════ */
+@media (min-width: 1024px) {
+  body {
+    overflow: auto;
+  }
+
+  /* ── App layout: sidebar + main ── */
+  #app {
+    max-width: 100%;
+    flex-direction: row;
+    height: 100vh;
+    overflow: hidden;
+    box-shadow: none;
+  }
+
+  /* ── SIDEBAR NAVIGATION ── */
+  .desktop-sidebar {
+    display: flex !important;
+    flex-direction: column;
+    width: 240px;
+    min-width: 240px;
+    height: 100vh;
+    background: var(--color-surface);
+    border-right: 1px solid var(--color-border-light);
+    padding: 0;
+    flex-shrink: 0;
+    z-index: var(--z-navigation);
+    overflow-y: auto;
+  }
+
+  .sidebar-brand {
+    padding: var(--space-6) var(--space-5);
+    border-bottom: 1px solid var(--color-border-light);
+  }
+
+  .sidebar-brand-title {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-extrabold);
+    color: var(--color-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .sidebar-brand-sub {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+    margin-top: 4px;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    padding: var(--space-3) var(--space-3);
+  }
+
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    color: var(--color-text-secondary);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    margin-bottom: var(--space-1);
+    border: none;
+    background: none;
+    width: 100%;
+    font-family: inherit;
+    font-size: var(--font-size-base);
+    text-align: left;
+  }
+
+  .sidebar-item:hover {
+    background: var(--color-bg);
+    color: var(--color-text-primary);
+  }
+
+  .sidebar-item.active {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .sidebar-item-icon {
+    font-size: 1.25rem;
+    width: 28px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .sidebar-item-label {
+    flex: 1;
+  }
+
+  .sidebar-item.sidebar-sos {
+    margin-top: var(--space-2);
+    background: var(--color-danger-light);
+    color: var(--color-danger);
+    font-weight: var(--font-weight-bold);
+  }
+
+  .sidebar-item.sidebar-sos:hover {
+    background: var(--color-danger);
+    color: white;
+  }
+
+  .sidebar-item.sidebar-sos.active {
+    background: var(--color-danger);
+    color: white;
+  }
+
+  .sidebar-status {
+    padding: var(--space-4) var(--space-5);
+    border-top: 1px solid var(--color-border-light);
+  }
+
+  .sidebar-status-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-2);
+  }
+
+  .sidebar-status-row:last-child {
+    margin-bottom: 0;
+  }
+
+  .sidebar-version {
+    padding: var(--space-3) var(--space-5);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+    text-align: center;
+  }
+
+  /* ── Main Content Area ── */
+  .desktop-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  /* ── Hide bottom tab bar on desktop ── */
+  .tab-bar {
+    display: none !important;
+  }
+
+  /* ── Screen adjusts ── */
+  .screen {
+    padding-bottom: var(--space-6);
+    overflow-y: auto;
+  }
+
+  /* ── Header on desktop ── */
+  .app-header {
+    padding: 0 var(--space-8);
+    border-bottom: 1px solid var(--color-border-light);
+    height: 64px;
+  }
+
+  .header-name {
+    font-size: var(--font-size-lg);
+  }
+
+  .screen-header {
+    padding: var(--space-6) var(--space-8);
+  }
+
+  .screen-title {
+    font-size: var(--font-size-2xl);
+  }
+
+  /* ── Hide community back button on desktop (sidebar handles navigation) ── */
+  #screen-community .back-btn {
+    display: none;
+  }
+
+  /* ── TRACKING — 2-column layout ── */
+  #screen-tracking.active {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .tracking-map-container {
+    width: 55%;
+    height: 100%;
+    min-height: 100%;
+    flex-shrink: 0;
+    order: 1;
+  }
+
+  .tracking-info-panel {
+    width: 45%;
+    overflow-y: auto;
+    order: 2;
+    border-left: 1px solid var(--color-border-light);
+    max-height: calc(100vh - 64px);
+    padding-bottom: var(--space-6);
+  }
+
+  .glasses-status-bar {
+    padding: var(--space-3) var(--space-6);
+  }
+
+  .location-info {
+    padding: var(--space-5) var(--space-6);
+  }
+
+  .quick-actions {
+    padding: var(--space-2) var(--space-5);
+  }
+
+  /* ── Routes — 2-column grid on desktop ── */
+  .route-list {
+    padding: 0 var(--space-8);
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-5);
+  }
+
+  .route-card {
+    margin-bottom: 0;
+  }
+
+  .add-route-btn {
+    grid-column: 1 / -1;
+    margin-top: 0;
+  }
+
+  .route-detail-map {
+    height: 300px;
+  }
+
+  /* ── SOS — constrain width and center ── */
+  #screen-sos {
+    max-width: 100%;
+  }
+
+  .sos-safe-card {
+    margin: var(--space-5) var(--space-8);
+    max-width: 640px;
+  }
+
+  .emergency-contacts {
+    margin: 0 var(--space-8) var(--space-4);
+    max-width: 640px;
+  }
+
+  .checkin-card {
+    margin: 0 var(--space-8) var(--space-4);
+    max-width: 640px;
+  }
+
+  .sos-history {
+    margin: 0 var(--space-8);
+    max-width: 640px;
+  }
+
+  .sos-demo-btn {
+    margin: var(--space-5) var(--space-8);
+    max-width: 640px;
+  }
+
+  .section-label {
+    padding-left: var(--space-8);
+    max-width: 640px;
+  }
+
+  /* ── Stats — better use of space ── */
+  #screen-stats .screen-header {
+    padding-left: var(--space-8);
+    padding-right: var(--space-8);
+  }
+
+  .stats-date-range {
+    padding: 0 var(--space-8);
+  }
+
+  .stats-metrics {
+    padding: 0 var(--space-8);
+    max-width: 720px;
+  }
+
+  .daily-chart,
+  .frequent-places,
+  .time-distribution {
+    margin-left: var(--space-8);
+    margin-right: var(--space-8);
+  }
+
+  /* Stats 2-column grid */
+  .stats-content-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-5);
+    padding: 0 var(--space-8);
+  }
+
+  .stats-content-grid .daily-chart,
+  .stats-content-grid .frequent-places,
+  .stats-content-grid .time-distribution {
+    margin: 0;
+  }
+
+  .weekly-report {
+    margin: var(--space-4) var(--space-8);
+    max-width: 720px;
+  }
+
+  /* ── Settings — constrain width ── */
+  #screen-settings .screen-header {
+    padding-left: var(--space-8);
+    padding-right: var(--space-8);
+  }
+
+  .settings-profile {
+    margin: 0 var(--space-8) var(--space-4);
+    max-width: 640px;
+  }
+
+  .settings-group {
+    margin: 0 var(--space-8);
+    max-width: 640px;
+  }
+
+  .settings-section-title {
+    padding-left: var(--space-8);
+    max-width: 640px;
+  }
+
+  .settings-app-info {
+    max-width: 640px;
+    margin-left: var(--space-8);
+  }
+
+  /* ── Settings — 2-column layout for AI features and notifications ── */
+  .settings-section .settings-group {
+    max-width: 640px;
+  }
+
+  /* ── Community ── */
+  #screen-community .screen-header {
+    padding-left: var(--space-8);
+    padding-right: var(--space-8);
+  }
+
+  .community-map-container {
+    height: 450px;
+  }
+
+  .report-list {
+    padding: var(--space-5) var(--space-8);
+    max-width: 900px;
+  }
+
+  /* Community reports in 2 columns on desktop */
+  #community-reports {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+  }
+
+  #community-reports .report-card {
+    margin-bottom: 0;
+  }
+
+  /* ── Modal on Desktop — centered dialog ── */
+  .modal-overlay {
+    align-items: center;
+    padding: var(--space-6);
+  }
+
+  .modal-content {
+    border-radius: var(--radius-xl);
+    max-width: 540px;
+    max-height: 75vh;
+    box-shadow: var(--shadow-xl);
+  }
+
+  /* ── SOS Overlay — centered content ── */
+  .sos-alert-overlay {
+    align-items: center;
+    padding: var(--space-8);
+    overflow-y: auto;
+  }
+
+  .sos-alert-overlay > * {
+    max-width: 560px;
+    width: 100%;
+  }
+
+  .sos-alert-header {
+    max-width: 560px;
+  }
+
+  /* ── Toast on desktop ── */
+  .toast {
+    top: 30px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   WIDE DESKTOP — 1400px+
+   Larger sidebar, 3 columns, etc.
+   ═══════════════════════════════════════════ */
+@media (min-width: 1400px) {
+  .desktop-sidebar {
+    width: 280px;
+    min-width: 280px;
+  }
+
+  .sidebar-brand {
+    padding: var(--space-8) var(--space-6);
+  }
+
+  .sidebar-brand-title {
+    font-size: var(--font-size-xl);
+  }
+
+  .sidebar-item {
+    padding: var(--space-4) var(--space-5);
+    font-size: var(--font-size-md);
+  }
+
+  /* ── Tracking — more space for map ── */
+  .tracking-map-container {
+    width: 60%;
+  }
+
+  .tracking-info-panel {
+    width: 40%;
+  }
+
+  /* ── Routes 3 columns ── */
+  .route-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .add-route-btn {
+    grid-column: 1 / -1;
+  }
+
+  /* ── Stats wider ── */
+  .stats-metrics {
+    max-width: 900px;
+  }
+
+  .stat-metric-value {
+    font-size: var(--font-size-3xl);
+  }
+
+  .weekly-report {
+    max-width: 900px;
+  }
+
+  /* ── SOS — wider containers ── */
+  .sos-safe-card,
+  .emergency-contacts,
+  .checkin-card,
+  .sos-history,
+  .sos-demo-btn,
+  .section-label {
+    max-width: 720px;
+  }
+
+  /* ── Settings — wider containers ── */
+  .settings-profile,
+  .settings-group,
+  .settings-section-title {
+    max-width: 720px;
+  }
+
+  /* ── Community — wider and 2 columns ── */
+  .community-map-container {
+    height: 500px;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   ULTRA-WIDE DESKTOP — 1800px+
+   ═══════════════════════════════════════════ */
+@media (min-width: 1800px) {
+  .desktop-sidebar {
+    width: 300px;
+    min-width: 300px;
+  }
+
+  /* ── Tracking — even more map space ── */
+  .tracking-map-container {
+    width: 65%;
+  }
+
+  .tracking-info-panel {
+    width: 35%;
+  }
+
+  /* ── Routes 4 columns ── */
+  .route-list {
+    grid-template-columns: repeat(4, 1fr);
+    max-width: 1400px;
+  }
+
+  /* ── Community reports 3 columns ── */
+  #community-reports {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* ── Stats — wider max ── */
+  .stats-metrics {
+    max-width: 1100px;
+  }
+
+  .weekly-report {
+    max-width: 1100px;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   HARDWARE CONNECTION INDICATOR
+   (Shared across all breakpoints)
+   ═══════════════════════════════════════════ */
+.hw-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.hw-indicator.demo {
+  background: var(--color-warning-light);
+  color: var(--color-warning-dark);
+}
+
+.hw-indicator.live {
+  background: var(--color-success-light);
+  color: var(--color-success-dark);
+}
+
+.hw-indicator.offline {
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+}
+
+.hw-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.hw-indicator.demo .hw-dot {
+  background: var(--color-warning);
+}
+
+.hw-indicator.live .hw-dot {
+  background: var(--color-success);
+  animation: pulse-dot 2s infinite;
+}
+
+.hw-indicator.offline .hw-dot {
+  background: var(--color-danger);
+}
+
+/* ═══════════════════════════════════════════
+   LANDSCAPE MOBILE (phone rotated)
+   ═══════════════════════════════════════════ */
+@media (max-width: 1023px) and (orientation: landscape) and (max-height: 500px) {
+  /* Reduce header height */
+  .app-header {
+    height: 48px;
+  }
+
+  /* Smaller tab bar */
+  .tab-bar {
+    height: 56px;
+  }
+
+  .tab-sos-btn {
+    width: 44px;
+    height: 44px;
+    margin-top: -14px;
+    font-size: 1rem;
+  }
+
+  /* Tracking map takes more space */
+  .tracking-map-container {
+    height: 200px;
+  }
+
+  /* Screen less bottom padding */
+  .screen {
+    padding-bottom: 64px;
+  }
+
+  /* SOS overlay scrollable in landscape */
+  .sos-alert-overlay {
+    overflow-y: auto;
+  }
+
+  .sos-alert-icon {
+    font-size: 2rem;
+  }
+
+  .sos-alert-title {
+    font-size: var(--font-size-xl);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   PRINT STYLES
+   ═══════════════════════════════════════════ */
+@media print {
+  .desktop-sidebar,
+  .tab-bar,
+  .app-header,
+  .sos-demo-btn,
+  .community-fab,
+  .map-center-btn {
+    display: none !important;
+  }
+
+  #app {
+    max-width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .screen {
+    padding-bottom: 0;
+    overflow: visible;
+  }
+
+  .screen.active {
+    display: block;
+  }
+}
