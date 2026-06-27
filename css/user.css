@@ -1047,3 +1047,227 @@ html, body {
   0% { opacity: 1; }
   100% { opacity: 0; }
 }
+
+/* ═══════════════════════════════════════════
+   MOBILE RESPONSIVE — Tối ưu cho điện thoại
+   ═══════════════════════════════════════════ */
+
+/* ── Small phones (320px - 375px) ── */
+@media (max-width: 375px) {
+  .quick-btn {
+    max-width: 100px;
+    height: 60px;
+    font-size: 0.6875rem;
+    border-radius: 16px;
+  }
+  .quick-btn-icon {
+    font-size: 1.25rem;
+  }
+  .record-btn {
+    width: 70px;
+    height: 70px;
+    font-size: 1.75rem;
+  }
+  .sos-btn {
+    width: 70px;
+    height: 70px;
+    font-size: 1.125rem;
+  }
+  .nav-toggle-btn {
+    width: 52px;
+    height: 52px;
+    font-size: 1.25rem;
+  }
+  .nav-direction-text {
+    font-size: 1rem;
+  }
+  .nav-location-text {
+    font-size: 0.75rem;
+  }
+  .alert-banner {
+    font-size: 0.875rem;
+    padding: 10px 14px;
+    margin: 6px 12px;
+  }
+  .user-bottom-controls {
+    padding: 0 12px;
+    gap: 8px;
+  }
+  .main-action-row {
+    gap: 12px;
+  }
+  .recording-visual {
+    width: 100px;
+    height: 100px;
+    font-size: 2.5rem;
+  }
+  .recording-timer {
+    font-size: 2rem;
+  }
+}
+
+/* ── Medium phones (376px - 430px) ── */
+@media (min-width: 376px) and (max-width: 430px) {
+  .quick-btn {
+    max-width: 110px;
+    height: 65px;
+  }
+  .record-btn {
+    width: 76px;
+    height: 76px;
+  }
+  .sos-btn {
+    width: 76px;
+    height: 76px;
+  }
+}
+
+/* ── Safe area for iPhone notch/Dynamic Island ── */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .user-status-bar {
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+  }
+  .user-bottom-controls {
+    padding-bottom: max(24px, calc(env(safe-area-inset-bottom) + 12px));
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+  }
+  .messages-panel {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .recording-overlay {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* ── Landscape orientation ── */
+@media (orientation: landscape) and (max-height: 500px) {
+  .user-status-bar {
+    padding: 6px 20px;
+  }
+  .nav-info-overlay {
+    margin-top: -4px;
+    padding: 0 12px;
+  }
+  .nav-direction-card {
+    padding: 8px 16px;
+    max-width: 50%;
+  }
+  .nav-direction-text {
+    font-size: 0.9375rem;
+  }
+  .user-bottom-controls {
+    padding: 0 20px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+    gap: 6px;
+  }
+  .quick-action-row {
+    gap: 8px;
+  }
+  .quick-btn {
+    height: 50px;
+    max-width: 90px;
+    border-radius: 14px;
+    font-size: 0.625rem;
+  }
+  .quick-btn-icon {
+    font-size: 1.125rem;
+  }
+  .main-action-row {
+    gap: 12px;
+    padding: 4px 0;
+  }
+  .record-btn {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+    border-width: 3px;
+  }
+  .sos-btn {
+    width: 60px;
+    height: 60px;
+    font-size: 1rem;
+    border-width: 3px;
+  }
+  .nav-toggle-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 1.25rem;
+  }
+  .alert-banner {
+    margin: 4px 12px;
+    padding: 8px 14px;
+    font-size: 0.875rem;
+  }
+  .recording-overlay {
+    flex-direction: row;
+    gap: 32px;
+    padding: 0 40px;
+  }
+  .recording-visual {
+    width: 80px;
+    height: 80px;
+    font-size: 2rem;
+  }
+  .sos-overlay-icon {
+    font-size: 3rem;
+  }
+  .sos-overlay-title {
+    font-size: 1.5rem;
+  }
+}
+
+/* ── Large screens / Tablets ── */
+@media (min-width: 768px) {
+  .nav-direction-card {
+    max-width: 500px;
+  }
+  .quick-action-row {
+    max-width: 500px;
+    margin: 0 auto;
+  }
+  .main-action-row {
+    max-width: 400px;
+    margin: 0 auto;
+  }
+  .messages-panel {
+    max-width: 500px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100%);
+  }
+  .messages-panel.open {
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* ── High contrast for outdoor readability ── */
+@media (prefers-contrast: high) {
+  .obstacle-label {
+    background: rgba(0, 0, 0, 1);
+    font-size: 0.875rem;
+    padding: 6px 12px;
+  }
+  .obstacle-distance {
+    font-size: 0.8125rem;
+    padding: 4px 12px;
+  }
+  .nav-direction-text {
+    font-size: 1.25rem;
+    font-weight: 800;
+  }
+  .alert-banner {
+    font-size: 1.125rem;
+    font-weight: 800;
+  }
+}
+
+/* ── Reduce motion for accessibility ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

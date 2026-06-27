@@ -19,6 +19,8 @@ const UserApp = {
   sosActive: false,
   cameraActive: false,
   currentRouteStep: 0,
+  _holdRecordTimeout: null,
+  _lastTapTime: 0,
 
   // ═══════════════════════════════════════════
   // INITIALIZATION
@@ -29,6 +31,7 @@ const UserApp = {
     this.setupCamera();
     this.setupControls();
     this.setupVolumeButtons();
+    this.setupTouchRecording();
     this.setupMessages();
     this.startClock();
 
@@ -51,18 +54,29 @@ const UserApp = {
       BlindNavRTC.onCallTimer = (time) => this.updateCallTimer(time);
       BlindNavRTC.onRemoteStream = (stream) => this.onRemoteStream(stream);
 
-      // Nhận tin nhắn từ người thân
+      // ══ Nhận tin nhắn từ người thân ══
       BlindNavRTC.onMessage = (data) => {
         if (data.type === 'text-message') {
-          this.onMessageReceived({ sender: data.sender, text: data.text });
+          console.log('📨 Received text message from family:', data.text);
+          this.onMessageReceived({ sender: data.sender || 'Con Lan', text: data.text });
+        }
+        if (data.type === 'voice-message') {
+          console.log('🎤 Received voice message from family');
+          this.onVoiceMessageReceived(data);
         }
       };
 
-      // Nhận SOS cancel từ người thân
+      // ══ Nhận SOS resolve từ người thân ══
       BlindNavRTC.onSOSAlert = (data) => {
         if (data.type === 'sos-resolved') {
           this.onSOSResolved();
         }
+      };
+
+      // ══ Nhận yêu cầu camera từ người thân ══
+      BlindNavRTC.onRequestCamera = () => {
+        console.log('📹 Family requesting camera feed');
+        this.reshareCameraFeed();
       };
     }
 
@@ -96,12 +110,8 @@ const UserApp = {
       if (placeholder) placeholder.style.display = 'none';
       this.cameraActive = true;
 
-      // Share camera feed cho người thân
-      setTimeout(() => {
-        if (typeof BlindNavRTC !== 'undefined') {
-          BlindNavRTC.shareCameraFeed(this.cameraStream);
-        }
-      }, 2000);
+      // Share camera feed cho người thân sau 2s
+      setTimeout(() => this.shareCameraToFamily(), 2000);
 
     } catch (err) {
       console.warn('📷 Camera error:', err);
@@ -109,6 +119,33 @@ const UserApp = {
         placeholder.querySelector('.camera-placeholder-text').textContent =
           'Không thể mở camera. Vui lòng cấp quyền camera.';
       }
+    }
+  },
+
+  /**
+   * Chia sẻ camera cho người thân qua WebRTC
+   */
+  shareCameraToFamily() {
+    if (this.cameraStream && typeof BlindNavRTC !== 'undefined') {
+      BlindNavRTC.shareCameraFeed(this.cameraStream);
+      console.log('📹 Camera shared to family');
+    }
+  },
+
+  /**
+   * Re-share camera khi người thân yêu cầu
+   */
+  reshareCameraFeed() {
+    if (this.cameraStream && this.cameraActive) {
+      this.shareCameraToFamily();
+    } else {
+      // Camera chưa sẵn sàng, thử lại sau 2s
+      console.log('📹 Camera not ready, retrying in 2s...');
+      setTimeout(() => {
+        if (this.cameraStream && this.cameraActive) {
+          this.shareCameraToFamily();
+        }
+      }, 2000);
     }
   },
 
@@ -331,7 +368,11 @@ const UserApp = {
     if (this.isRecording) return;
     try {
       const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      this.mediaRecorder = new MediaRecorder(audioStream);
+      this.mediaRecorder = new MediaRecorder(audioStream, {
+        mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+          ? 'audio/webm;codecs=opus' 
+          : 'audio/webm'
+      });
       this.recordedChunks = [];
 
       this.mediaRecorder.ondataavailable = (e) => {
@@ -340,11 +381,16 @@ const UserApp = {
 
       this.mediaRecorder.onstop = () => {
         const blob = new Blob(this.recordedChunks, { type: 'audio/webm' });
-        this.sendVoiceMessage(blob);
+        if (this.recordingSeconds >= 1) {
+          // Chỉ gửi nếu ghi >= 1 giây
+          this.sendVoiceMessage(blob);
+        } else {
+          this.speak('Tin nhắn quá ngắn. Hãy thử lại.');
+        }
         audioStream.getTracks().forEach(t => t.stop());
       };
 
-      this.mediaRecorder.start();
+      this.mediaRecorder.start(100); // collect data every 100ms
       this.isRecording = true;
       this.recordingSeconds = 0;
 
@@ -369,7 +415,15 @@ const UserApp = {
 
   stopRecording() {
     if (!this.isRecording || !this.mediaRecorder) return;
-    this.mediaRecorder.stop();
+    
+    try {
+      if (this.mediaRecorder.state !== 'inactive') {
+        this.mediaRecorder.stop();
+      }
+    } catch(e) {
+      console.warn('Stop recording error:', e);
+    }
+    
     this.isRecording = false;
 
     const overlay = document.getElementById('recording-overlay');
@@ -412,6 +466,7 @@ const UserApp = {
           duration: this.recordingSeconds,
           timestamp: msg.timestamp
         });
+        console.log('📤 Voice message sent to family');
       };
     }
 
@@ -419,24 +474,66 @@ const UserApp = {
   },
 
   // ═══════════════════════════════════════════
-  // INCOMING MESSAGES
+  // INCOMING MESSAGES — Nhận + TTS đọc to
   // ═══════════════════════════════════════════
   onMessageReceived(msg) {
+    // Vibrate mạnh
     if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 100]);
+    
+    // Âm thông báo
     if (typeof AudioManager !== 'undefined') AudioManager.playNotification('info');
 
+    // Hiện toast
     this.showMessageToast(msg.sender || 'Con Lan', msg.text || 'Tin nhắn mới');
 
+    // ✅ ĐỌC TO tin nhắn bằng TTS tiếng Việt (Google voice)
     setTimeout(() => {
-      this.speak(`Tin nhắn từ ${msg.sender || 'người thân'}. ${msg.text || ''}`);
-    }, 600);
+      const fullMessage = `Tin nhắn từ ${msg.sender || 'người thân'}. ${msg.text || ''}`;
+      console.log('🔊 Speaking message:', fullMessage);
+      this.speak(fullMessage);
+    }, 800);
 
+    // Lưu tin nhắn
     this.messages.push({
       id: Date.now(),
       type: 'text',
       sender: msg.sender || 'Con Lan',
       text: msg.text,
       timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      sent: false
+    });
+    this.renderMessages();
+  },
+
+  /**
+   * Nhận tin nhắn thoại từ người thân → phát audio
+   */
+  onVoiceMessageReceived(data) {
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 100]);
+    if (typeof AudioManager !== 'undefined') AudioManager.playNotification('info');
+
+    this.showMessageToast(data.sender || 'Con Lan', 'Gửi tin nhắn thoại');
+    
+    // Thông báo bằng TTS
+    this.speak(`Tin nhắn thoại từ ${data.sender || 'người thân'}. Đang phát.`);
+
+    // Phát audio tin nhắn thoại
+    if (data.audioData) {
+      setTimeout(() => {
+        const audio = new Audio(data.audioData);
+        audio.volume = 1.0;
+        audio.play().catch(e => console.warn('Voice playback failed:', e));
+      }, 2500); // Chờ TTS đọc xong "Tin nhắn thoại từ..."
+    }
+
+    // Lưu tin nhắn
+    this.messages.push({
+      id: Date.now(),
+      type: 'audio',
+      sender: data.sender || 'Con Lan',
+      audioUrl: data.audioData || '',
+      duration: data.duration || 0,
+      timestamp: data.timestamp || new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
       sent: false
     });
     this.renderMessages();
@@ -483,7 +580,7 @@ const UserApp = {
       this.updateSOSStep('sos-step-1', 'done', '✅ Đã gửi vị trí GPS');
       this.updateSOSStep('sos-step-2', 'active', '📞 Đang gọi cho Con Lan...');
 
-      // Step 2: Gọi video thật
+      // Step 2: Gọi video thật sau 1.5s
       setTimeout(() => this.startSOSCall(), 1500);
     }, 2000);
   },
@@ -613,11 +710,15 @@ const UserApp = {
 
   onCallStateChange(state) {
     const statusEl = document.getElementById('call-status-text');
+    console.log('📞 User call state:', state);
+    
     switch (state) {
-      case 'calling': if (statusEl) statusEl.textContent = 'Đang gọi...'; break;
+      case 'calling': 
+        if (statusEl) statusEl.textContent = 'Đang gọi...'; 
+        break;
       case 'ringing':
         if (statusEl) statusEl.textContent = 'Đang đổ chuông...';
-        // Nếu là user nhận cuộc gọi đến
+        // Nếu là user nhận cuộc gọi đến từ family
         if (BlindNavRTC._incomingOfferSdp && !document.getElementById('call-overlay')?.classList.contains('active')) {
           this.showIncomingCall({ callerName: 'Con Lan' });
         }
@@ -630,6 +731,12 @@ const UserApp = {
         if (statusEl) statusEl.textContent = 'Cuộc gọi đã kết thúc';
         const callOverlay = document.getElementById('call-overlay');
         if (callOverlay) setTimeout(() => callOverlay.classList.remove('active'), 1500);
+        // Dọn incoming call overlay nếu còn hiện
+        const incomingOverlay = document.getElementById('incoming-call');
+        if (incomingOverlay) incomingOverlay.classList.remove('active');
+        clearTimeout(this._autoAnswerTimeout);
+        clearInterval(this._callVibrate);
+        if (typeof AudioManager !== 'undefined') AudioManager.stopRingtone();
         break;
     }
   },
@@ -646,8 +753,11 @@ const UserApp = {
 
     this.speak(`Cuộc gọi đến từ ${callData.callerName || 'Con Lan'}. Chạm nút xanh để nghe.`);
 
-    // Auto-answer sau 8s
-    this._autoAnswerTimeout = setTimeout(() => this.answerIncomingCall(), 8000);
+    // Auto-answer sau 5s (người mù không cần phải tìm nút)
+    this._autoAnswerTimeout = setTimeout(() => {
+      console.log('📞 Auto-answering call for blind user');
+      this.answerIncomingCall();
+    }, 5000);
   },
 
   updateCallTimer(time) {
@@ -687,7 +797,7 @@ const UserApp = {
         clearTimeout(pressTimer);
         sosBtn.classList.remove('active');
       };
-      sosBtn.addEventListener('touchstart', startSOS);
+      sosBtn.addEventListener('touchstart', startSOS, { passive: false });
       sosBtn.addEventListener('mousedown', startSOS);
       sosBtn.addEventListener('touchend', cancelSOS);
       sosBtn.addEventListener('mouseup', cancelSOS);
@@ -739,15 +849,85 @@ const UserApp = {
     }
   },
 
+  /**
+   * Volume buttons: Trên desktop, listen keydown events
+   * Volume Up → Ghi âm
+   * Volume Down → SOS
+   */
   setupVolumeButtons() {
     document.addEventListener('keydown', (e) => {
+      // Volume Up → Toggle recording
       if (e.key === 'AudioVolumeUp' || e.keyCode === 175) {
         e.preventDefault();
         this.toggleRecording();
       }
+      // Volume Down → SOS
       if (e.key === 'AudioVolumeDown' || e.keyCode === 174) {
         e.preventDefault();
         if (!this.sosActive) this.triggerSOS();
+      }
+    });
+  },
+
+  /**
+   * Touch-based recording cho mobile:
+   * - Record button: Touch & hold để ghi, thả ra để gửi
+   * - Double-tap anywhere: Toggle recording
+   */
+  setupTouchRecording() {
+    const recordBtn = document.getElementById('record-btn');
+    
+    if (recordBtn) {
+      let holdTimer = null;
+      let isHolding = false;
+
+      // Touch & Hold trên record button → ghi âm → thả ra → gửi
+      recordBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        isHolding = true;
+        holdTimer = setTimeout(() => {
+          if (isHolding && !this.isRecording) {
+            this.startRecording();
+          }
+        }, 500); // Giữ 0.5s để bắt đầu ghi
+      }, { passive: false });
+
+      recordBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        clearTimeout(holdTimer);
+        if (isHolding && this.isRecording) {
+          // Thả ra → dừng ghi âm → gửi
+          this.stopRecording();
+        } else if (!this.isRecording) {
+          // Tap ngắn → toggle recording
+          this.toggleRecording();
+        }
+        isHolding = false;
+      });
+
+      recordBtn.addEventListener('touchcancel', () => {
+        clearTimeout(holdTimer);
+        isHolding = false;
+      });
+    }
+
+    // Double-tap anywhere (ngoại trừ buttons) → toggle recording
+    document.addEventListener('touchend', (e) => {
+      // Bỏ qua nếu tap vào button hoặc overlay
+      if (e.target.closest('button') || e.target.closest('.recording-overlay') || 
+          e.target.closest('.sos-overlay') || e.target.closest('.call-overlay') ||
+          e.target.closest('.incoming-call') || e.target.closest('.messages-panel')) {
+        return;
+      }
+
+      const now = Date.now();
+      if (now - this._lastTapTime < 400) {
+        // Double-tap detected
+        e.preventDefault();
+        this.toggleRecording();
+        this._lastTapTime = 0;
+      } else {
+        this._lastTapTime = now;
       }
     });
   },
@@ -801,7 +981,11 @@ const UserApp = {
   playAudioMessage(url) {
     if (url) {
       const audio = new Audio(url);
-      audio.play();
+      audio.volume = 1.0;
+      audio.play().catch(e => {
+        console.warn('Audio play failed:', e);
+        this.speak('Phát lại tin nhắn thoại.');
+      });
     } else {
       this.speak('Phát lại tin nhắn thoại.');
     }
@@ -816,7 +1000,7 @@ const UserApp = {
   },
 
   // ═══════════════════════════════════════════
-  // TTS
+  // TTS — Sử dụng AudioManager (Google TTS tiếng Việt)
   // ═══════════════════════════════════════════
   speak(text) {
     if (typeof AudioManager !== 'undefined') {

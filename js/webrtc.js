@@ -21,10 +21,16 @@ const BlindNavRTC = {
   channel: null, // BroadcastChannel
   pendingCandidates: [],
 
+  // ── Camera sharing state ──
+  cameraPc: null,
+  cameraPendingCandidates: [],
+  _cameraStream: null, // Store reference for re-sharing
+
   // ── ICE Servers ──
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' }
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' }
   ],
 
   // ── Callbacks ──
@@ -34,6 +40,7 @@ const BlindNavRTC = {
   onCallTimer: null,
   onCameraFeed: null,
   onSOSAlert: null,
+  onRequestCamera: null,
 
   /**
    * Initialize — sử dụng BroadcastChannel để giao tiếp giữa 2 tab
@@ -56,7 +63,11 @@ const BlindNavRTC = {
    */
   send(data) {
     if (this.channel) {
-      this.channel.postMessage({ ...data, from: this.role, ts: Date.now() });
+      try {
+        this.channel.postMessage({ ...data, from: this.role, ts: Date.now() });
+      } catch (e) {
+        console.warn('BroadcastChannel send error:', e);
+      }
     }
   },
 
@@ -71,23 +82,35 @@ const BlindNavRTC = {
       // ── Presence ──
       case 'presence':
         console.log(`👤 ${data.role} is ${data.status}`);
+        // Nếu user vừa online và mình là family, yêu cầu camera
+        if (data.role === 'user' && data.status === 'online' && this.role === 'family') {
+          setTimeout(() => this.send({ type: 'request-camera' }), 1000);
+        }
         break;
 
       // ── Text message ──
       case 'text-message':
+        console.log('📨 Text message received:', data.text);
         if (this.onMessage) this.onMessage(data);
         break;
 
       // ── Voice message ──
       case 'voice-message':
+        console.log('🎤 Voice message received');
         if (this.onMessage) this.onMessage(data);
         break;
 
       // ── SOS Alert ──
       case 'sos-alert':
+        console.log('🚨 SOS Alert received!');
         if (this.onSOSAlert) this.onSOSAlert(data);
         break;
       case 'sos-cancel':
+        console.log('✅ SOS Cancelled');
+        if (this.onSOSAlert) this.onSOSAlert(data);
+        break;
+      case 'sos-resolved':
+        console.log('✅ SOS Resolved by family');
         if (this.onSOSAlert) this.onSOSAlert(data);
         break;
 
@@ -97,6 +120,25 @@ const BlindNavRTC = {
         break;
       case 'camera-answer':
         this._handleCameraAnswer(data);
+        break;
+      case 'camera-ice':
+        this._handleCameraICE(data);
+        break;
+
+      // ── Request camera (family yêu cầu user share camera) ──
+      case 'request-camera':
+        console.log('📹 Camera request received');
+        if (this.onRequestCamera) {
+          this.onRequestCamera();
+        }
+        break;
+
+      // ── Obstacle/Location updates ──
+      case 'obstacle-update':
+        if (this.onMessage) this.onMessage(data);
+        break;
+      case 'location-update':
+        if (this.onMessage) this.onMessage(data);
         break;
 
       // ── WebRTC Call Signaling ──
@@ -193,7 +235,11 @@ const BlindNavRTC = {
 
       // Thêm pending ICE candidates
       for (const candidate of this.pendingCandidates) {
-        await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        try {
+          await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (e) {
+          console.warn('Failed to add pending ICE candidate:', e);
+        }
       }
       this.pendingCandidates = [];
 
@@ -239,12 +285,26 @@ const BlindNavRTC = {
    */
   async shareCameraFeed(cameraStream) {
     try {
+      // Lưu reference để re-share khi cần
+      this._cameraStream = cameraStream;
+
+      // Cleanup camera PC cũ nếu có
+      if (this.cameraPc) {
+        try { this.cameraPc.close(); } catch(e) {}
+        this.cameraPc = null;
+      }
+      this.cameraPendingCandidates = [];
+
       this.cameraPc = new RTCPeerConnection({ iceServers: this.iceServers });
 
       this.cameraPc.onicecandidate = (e) => {
         if (e.candidate) {
           this.send({ type: 'camera-ice', candidate: e.candidate.toJSON() });
         }
+      };
+
+      this.cameraPc.onconnectionstatechange = () => {
+        console.log(`📹 Camera connection: ${this.cameraPc?.connectionState}`);
       };
 
       cameraStream.getTracks().forEach(track => {
@@ -261,8 +321,18 @@ const BlindNavRTC = {
     }
   },
 
+  /**
+   * Xử lý camera offer (family nhận từ user)
+   */
   async _handleCameraOffer(data) {
     try {
+      // Cleanup camera PC cũ nếu có
+      if (this.cameraPc) {
+        try { this.cameraPc.close(); } catch(e) {}
+        this.cameraPc = null;
+      }
+      this.cameraPendingCandidates = [];
+
       this.cameraPc = new RTCPeerConnection({ iceServers: this.iceServers });
 
       this.cameraPc.onicecandidate = (e) => {
@@ -272,38 +342,85 @@ const BlindNavRTC = {
       };
 
       this.cameraPc.ontrack = (e) => {
+        console.log('📹 Camera track received!');
         if (this.onCameraFeed) {
           this.onCameraFeed(e.streams[0]);
         }
+      };
+
+      this.cameraPc.onconnectionstatechange = () => {
+        console.log(`📹 Camera connection: ${this.cameraPc?.connectionState}`);
       };
 
       await this.cameraPc.setRemoteDescription(
         new RTCSessionDescription({ type: 'offer', sdp: data.sdp })
       );
 
+      // Thêm pending camera ICE candidates
+      for (const candidate of this.cameraPendingCandidates) {
+        try {
+          await this.cameraPc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (e) {
+          console.warn('Failed to add pending camera ICE:', e);
+        }
+      }
+      this.cameraPendingCandidates = [];
+
       const answer = await this.cameraPc.createAnswer();
       await this.cameraPc.setLocalDescription(answer);
 
       this.send({ type: 'camera-answer', sdp: answer.sdp });
+      console.log('📹 Camera answer sent');
     } catch (err) {
       console.error('Camera offer handle error:', err);
     }
   },
 
+  /**
+   * Xử lý camera answer (user nhận từ family)
+   */
   async _handleCameraAnswer(data) {
     try {
-      if (this.cameraPc) {
+      if (this.cameraPc && this.cameraPc.signalingState !== 'stable') {
         await this.cameraPc.setRemoteDescription(
           new RTCSessionDescription({ type: 'answer', sdp: data.sdp })
         );
+
+        // Thêm pending camera ICE candidates
+        for (const candidate of this.cameraPendingCandidates) {
+          try {
+            await this.cameraPc.addIceCandidate(new RTCIceCandidate(candidate));
+          } catch (e) {
+            console.warn('Failed to add pending camera ICE:', e);
+          }
+        }
+        this.cameraPendingCandidates = [];
+
+        console.log('📹 Camera answer processed');
       }
     } catch (err) {
       console.error('Camera answer error:', err);
     }
   },
 
+  /**
+   * Xử lý camera ICE candidate
+   */
+  async _handleCameraICE(data) {
+    try {
+      if (this.cameraPc && this.cameraPc.remoteDescription) {
+        await this.cameraPc.addIceCandidate(new RTCIceCandidate(data.candidate));
+      } else {
+        // Queue candidate cho đến khi remote description được set
+        this.cameraPendingCandidates.push(data.candidate);
+      }
+    } catch (err) {
+      console.warn('Camera ICE candidate error:', err);
+    }
+  },
+
   // ═══════════════════════════════════════════
-  // INTERNAL — WebRTC Signaling Handlers
+  // INTERNAL — WebRTC Call Signaling Handlers
   // ═══════════════════════════════════════════
 
   async _handleCallOffer(data) {
@@ -317,19 +434,24 @@ const BlindNavRTC = {
 
   async _handleCallAnswer(data) {
     try {
-      if (this.peerConnection) {
+      if (this.peerConnection && this.peerConnection.signalingState === 'have-local-offer') {
         await this.peerConnection.setRemoteDescription(
           new RTCSessionDescription({ type: 'answer', sdp: data.sdp })
         );
         
         // Thêm pending candidates
         for (const candidate of this.pendingCandidates) {
-          await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+          try {
+            await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+          } catch (e) {
+            console.warn('Failed to add pending ICE candidate:', e);
+          }
         }
         this.pendingCandidates = [];
 
         this._setCallState('connected');
         this._startCallTimer();
+        console.log('✅ Call connected');
       }
     } catch (err) {
       console.error('Handle answer error:', err);
@@ -339,14 +461,14 @@ const BlindNavRTC = {
   async _handleICECandidate(data) {
     try {
       const pc = this.peerConnection;
-      if (pc && pc.remoteDescription) {
+      if (pc && pc.remoteDescription && pc.remoteDescription.type) {
         await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
       } else {
-        // Queue it
+        // Queue it — sẽ add sau khi có remote description
         this.pendingCandidates.push(data.candidate);
       }
     } catch (err) {
-      console.error('ICE candidate error:', err);
+      console.warn('ICE candidate error:', err);
     }
   },
 
@@ -362,8 +484,9 @@ const BlindNavRTC = {
 
   _createPeerConnection() {
     if (this.peerConnection) {
-      this.peerConnection.close();
+      try { this.peerConnection.close(); } catch(e) {}
     }
+    this.pendingCandidates = [];
 
     this.peerConnection = new RTCPeerConnection({
       iceServers: this.iceServers
@@ -388,10 +511,18 @@ const BlindNavRTC = {
 
     this.peerConnection.onconnectionstatechange = () => {
       const state = this.peerConnection?.connectionState;
-      console.log(`🔗 Connection: ${state}`);
+      console.log(`🔗 Call connection: ${state}`);
+      if (state === 'connected') {
+        this._setCallState('connected');
+      }
       if (state === 'disconnected' || state === 'failed') {
         this._handleHangup();
       }
+    };
+
+    this.peerConnection.oniceconnectionstatechange = () => {
+      const state = this.peerConnection?.iceConnectionState;
+      console.log(`🧊 ICE state: ${state}`);
     };
   },
 
@@ -401,16 +532,18 @@ const BlindNavRTC = {
       this.localStream = null;
     }
     if (this.peerConnection) {
-      this.peerConnection.close();
+      try { this.peerConnection.close(); } catch(e) {}
       this.peerConnection = null;
     }
     this.remoteStream = null;
+    this._incomingOfferSdp = null;
     this._stopCallTimer();
     this.pendingCandidates = [];
   },
 
   _setCallState(state) {
     this.callState = state;
+    console.log(`📞 Call state → ${state}`);
     if (this.onCallStateChange) this.onCallStateChange(state);
   },
 

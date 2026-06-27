@@ -993,32 +993,63 @@ const FamilyCallManager = {
       // Nhận camera feed từ user
       BlindNavRTC.onCameraFeed = (stream) => this.onCameraFeed(stream);
 
-      // Nhận tin nhắn thoại từ user
+      // Nhận tin nhắn từ user (thoại + text + obstacle + location)
       BlindNavRTC.onMessage = (data) => {
-        if (data.type === 'voice-message') {
-          App.showToast(`🎤 Bố vừa gửi tin nhắn thoại (${data.duration}s)`, 'info');
-          if (typeof AudioManager !== 'undefined') AudioManager.playNotification('info');
-          // Phát audio nếu có
-          if (data.audioData) {
-            const audio = new Audio(data.audioData);
-            audio.play();
-          }
+        switch (data.type) {
+          case 'voice-message':
+            console.log('🎤 Voice message received from Bố');
+            App.showToast(`🎤 Bố vừa gửi tin nhắn thoại (${data.duration}s)`, 'info');
+            if (typeof AudioManager !== 'undefined') AudioManager.playNotification('info');
+            // Phát audio tin nhắn thoại
+            if (data.audioData) {
+              setTimeout(() => {
+                const audio = new Audio(data.audioData);
+                audio.volume = 1.0;
+                audio.play().catch(e => console.warn('Voice playback failed:', e));
+              }, 500);
+            }
+            break;
+          
+          case 'text-message':
+            // Tin nhắn text từ Bố (nếu Bố gửi ngược lại)
+            console.log('📨 Text message from Bố:', data.text);
+            App.showToast(`💬 Bố: ${data.text}`, 'info');
+            break;
+
+          case 'obstacle-update':
+            // Cập nhật thông tin vật cản
+            this._updateObstacleInfo(data);
+            break;
+          
+          case 'location-update':
+            // Cập nhật vị trí
+            this._updateLocationInfo(data);
+            break;
         }
       };
 
       // Nhận SOS từ user
       BlindNavRTC.onSOSAlert = (data) => {
         if (data.type === 'sos-alert') {
+          console.log('🚨 SOS Alert from Bố!');
           // Kích hoạt SOS trên giao diện người thân
           App.showToast('🚨 BỐ VỪA BẤM SOS! Kiểm tra ngay!', 'danger');
           if (typeof AudioManager !== 'undefined') AudioManager.playSOSAlert();
           if (typeof App !== 'undefined') App.triggerSOS();
         }
         if (data.type === 'sos-cancel') {
+          console.log('✅ SOS Cancelled by Bố');
           App.showToast('✅ Bố đã hủy SOS — An toàn', 'success');
           if (typeof AudioManager !== 'undefined') AudioManager.stopSOSAlert();
+          if (typeof App !== 'undefined') App.dismissSOS();
         }
       };
+
+      // Yêu cầu camera từ user khi family online
+      setTimeout(() => {
+        BlindNavRTC.send({ type: 'request-camera' });
+        console.log('📹 Requested camera feed from user');
+      }, 2000);
     }
 
     // Expand button
@@ -1028,8 +1059,27 @@ const FamilyCallManager = {
     }
   },
 
+  // Cập nhật thông tin vật cản trên giao diện family
+  _updateObstacleInfo(data) {
+    // Có thể hiển thị info vật cản trên tracking panel
+    if (data.obstacles && data.obstacles.length > 0) {
+      const names = data.obstacles.map(o => `${o.name} (${o.distance})`).join(', ');
+      console.log(`⚠️ Obstacles near Bố: ${names}`);
+    }
+  },
+
+  // Cập nhật vị trí trên giao diện family
+  _updateLocationInfo(data) {
+    const addrEl = document.getElementById('current-address');
+    if (addrEl && data.address) {
+      addrEl.textContent = data.address;
+    }
+    console.log(`📍 Bố location: ${data.address}`);
+  },
+
   // Nhận camera feed real từ user qua WebRTC
   onCameraFeed(stream) {
+    console.log('📹 Camera feed received from Bố!');
     const video = document.getElementById('remote-camera-feed');
     const placeholder = document.getElementById('live-feed-placeholder');
     const badge = document.querySelector('.live-feed-badge');
@@ -1038,6 +1088,8 @@ const FamilyCallManager = {
     if (video) {
       video.srcObject = stream;
       video.classList.add('active');
+      // Đảm bảo video play
+      video.play().catch(e => console.warn('Camera video play failed:', e));
     }
     if (placeholder) placeholder.classList.add('hidden');
     if (badge) badge.classList.add('active');
@@ -1056,9 +1108,8 @@ const FamilyCallManager = {
     App.showToast('📹 Đã kết nối camera trực tiếp của Bố', 'success');
   },
 
-  // Yêu cầu camera feed (fallback nếu chưa tự nhận)
+  // Yêu cầu camera feed
   requestCameraFeed() {
-    // Gửi yêu cầu qua BroadcastChannel
     if (typeof BlindNavRTC !== 'undefined') {
       BlindNavRTC.send({ type: 'request-camera' });
     }
@@ -1070,15 +1121,24 @@ const FamilyCallManager = {
     const overlay = document.getElementById('family-call-overlay');
     if (overlay) overlay.classList.add('active');
 
+    const statusEl = document.getElementById('family-call-status');
+    if (statusEl) statusEl.textContent = 'Đang kết nối...';
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       const localVideo = document.getElementById('family-local-video');
-      if (localVideo) localVideo.srcObject = stream;
+      if (localVideo) {
+        localVideo.srcObject = stream;
+        localVideo.play().catch(() => {});
+      }
 
       if (typeof BlindNavRTC !== 'undefined') {
         BlindNavRTC.startCall(stream);
       }
+
+      if (statusEl) statusEl.textContent = 'Đang gọi Bố...';
     } catch(e) {
+      console.error('Start call error:', e);
       this.endCall();
       App.showToast('Không thể truy cập camera/mic. Cấp quyền và thử lại.', 'danger');
     }
@@ -1121,27 +1181,32 @@ const FamilyCallManager = {
 
   onCallStateChange(state) {
     const statusEl = document.getElementById('family-call-status');
-    if (!statusEl) return;
+    console.log('📞 Family call state:', state);
 
     switch(state) {
-      case 'calling': statusEl.textContent = 'Đang gọi...'; break;
+      case 'calling':
+        if (statusEl) statusEl.textContent = 'Đang gọi...';
+        break;
       case 'ringing':
-        statusEl.textContent = 'Đang đổ chuông...';
-        // Nếu user gọi đến family, tự động nhận
+        if (statusEl) statusEl.textContent = 'Đang đổ chuông...';
+        // Nếu user (Bố) gọi đến family → tự động nhận cuộc gọi
         if (BlindNavRTC._incomingOfferSdp) {
           this.handleIncomingCall();
         }
         break;
       case 'connected':
-        statusEl.textContent = 'Đã kết nối';
+        if (statusEl) statusEl.textContent = 'Đã kết nối';
         if (typeof AudioManager !== 'undefined') AudioManager.playCallConnect();
+        this.isConnected = true;
         break;
       case 'ended':
-        statusEl.textContent = 'Đã kết thúc';
+        if (statusEl) statusEl.textContent = 'Đã kết thúc';
+        this.isConnected = false;
         setTimeout(() => {
           const overlay = document.getElementById('family-call-overlay');
           if (overlay) overlay.classList.remove('active');
         }, 1500);
+        if (typeof AudioManager !== 'undefined') AudioManager.stopRingtone();
         break;
     }
   },
@@ -1159,20 +1224,28 @@ const FamilyCallManager = {
 
     App.showToast('📞 Bố đang gọi video!', 'info');
 
-    // Tự động nhận sau 2s
+    // Tự động nhận sau 2s (không cần user family nhấn nút)
     setTimeout(async () => {
       if (typeof AudioManager !== 'undefined') AudioManager.stopRingtone();
+      
+      if (statusEl) statusEl.textContent = 'Đang kết nối...';
 
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         const localVideo = document.getElementById('family-local-video');
-        if (localVideo) localVideo.srcObject = stream;
+        if (localVideo) {
+          localVideo.srcObject = stream;
+          localVideo.play().catch(() => {});
+        }
 
         if (typeof BlindNavRTC !== 'undefined' && BlindNavRTC._incomingOfferSdp) {
-          BlindNavRTC.answerCall(BlindNavRTC._incomingOfferSdp);
+          await BlindNavRTC.answerCall(BlindNavRTC._incomingOfferSdp);
+          if (statusEl) statusEl.textContent = 'Đã kết nối với Bố';
         }
       } catch(e) {
         console.error('Cannot answer call:', e);
+        if (statusEl) statusEl.textContent = 'Lỗi kết nối';
+        App.showToast('Không thể nhận cuộc gọi — cần quyền camera/mic', 'danger');
       }
     }, 2000);
   },
@@ -1183,9 +1256,13 @@ const FamilyCallManager = {
   },
 
   onRemoteStream(stream) {
+    console.log('🎥 Remote stream received from Bố');
     // Hiển thị video remote
     const video = document.getElementById('family-remote-video');
-    if (video) video.srcObject = stream;
+    if (video) {
+      video.srcObject = stream;
+      video.play().catch(() => {});
+    }
 
     // Đảm bảo audio phát ra
     let remoteAudio = document.getElementById('family-remote-audio');
@@ -1204,18 +1281,27 @@ const FamilyCallManager = {
     container.style.aspectRatio = container.style.aspectRatio === '4/3' ? '16/9' : '4/3';
   },
 
+  /**
+   * Gửi tin nhắn text cho Bố
+   * Tin nhắn sẽ được đọc to bằng Google TTS tiếng Việt trên điện thoại Bố
+   */
   showSendMessage() {
     App.showModal('💬 Gửi tin nhắn cho Bố', `
       <div style="padding: 0 20px 20px;">
         <p style="color:var(--color-text-secondary);margin-bottom:16px;font-size:0.9375rem;">
-          Tin nhắn sẽ được đọc to bằng giọng AI trên điện thoại của Bố
+          Tin nhắn sẽ được đọc to bằng giọng AI tiếng Việt trên điện thoại của Bố
         </p>
         <textarea id="family-msg-input" placeholder="Ví dụ: Bố ơi, trời sắp mưa, bố về nhà sớm nhé!" 
-          style="width:100%;height:100px;border:2px solid var(--color-border);border-radius:12px;padding:12px;font-size:1rem;font-family:inherit;resize:none;"></textarea>
+          style="width:100%;height:100px;border:2px solid var(--color-border);border-radius:12px;padding:12px;font-size:1rem;font-family:inherit;resize:none;background:var(--color-surface);color:var(--color-text-primary);"></textarea>
         <button class="btn btn-primary btn-block btn-lg" style="margin-top:16px;" 
           onclick="FamilyCallManager.doSendMessage();">📤 Gửi đến Bố</button>
       </div>
     `);
+    // Focus vào textarea
+    setTimeout(() => {
+      const input = document.getElementById('family-msg-input');
+      if (input) input.focus();
+    }, 300);
   },
 
   doSendMessage() {
@@ -1226,7 +1312,9 @@ const FamilyCallManager = {
       return;
     }
 
-    // Gửi qua BroadcastChannel → user tab sẽ nhận + TTS đọc
+    console.log('📤 Sending text message to Bố:', text);
+
+    // Gửi qua BroadcastChannel → user tab sẽ nhận + TTS đọc to bằng giọng Google tiếng Việt
     if (typeof BlindNavRTC !== 'undefined') {
       BlindNavRTC.send({
         type: 'text-message',
