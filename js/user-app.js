@@ -165,16 +165,20 @@ const UserApp = {
     const scenario = [
       {
         obstacles: [
-          { name: 'Xe máy đỗ', distance: '3 mét', direction: 'bên trái đường', type: 'warning',
-            box: { top: '40%', left: '5%', width: '140px', height: '100px' } }
+          {
+            name: 'Xe máy đỗ', distance: '3 mét', direction: 'bên trái đường', type: 'warning',
+            box: { top: '40%', left: '5%', width: '140px', height: '100px' }
+          }
         ],
         speech: 'Có xe máy đỗ bên trái đường, cách 3 mét. Đi tiếp bên phải.',
         alert: '🏍️ Xe máy đỗ bên trái, cách 3m'
       },
       {
         obstacles: [
-          { name: 'Cột điện', distance: '2 mét', direction: 'phía trước bên phải', type: 'danger',
-            box: { top: '20%', left: '65%', width: '50px', height: '200px' } }
+          {
+            name: 'Cột điện', distance: '2 mét', direction: 'phía trước bên phải', type: 'danger',
+            box: { top: '20%', left: '65%', width: '50px', height: '200px' }
+          }
         ],
         speech: 'Cảnh báo! Cột điện phía trước bên phải, cách 2 mét. Tránh sang trái.',
         alert: '⚡ Cột điện bên phải, cách 2m — Tránh trái!'
@@ -186,24 +190,30 @@ const UserApp = {
       },
       {
         obstacles: [
-          { name: 'Bậc thang', distance: '1.5 mét', direction: 'phía trước', type: 'danger',
-            box: { top: '70%', left: '15%', width: '250px', height: '40px' } }
+          {
+            name: 'Bậc thang', distance: '1.5 mét', direction: 'phía trước', type: 'danger',
+            box: { top: '70%', left: '15%', width: '250px', height: '40px' }
+          }
         ],
         speech: 'Cẩn thận! Bậc thang phía trước, cách 1 mét rưỡi. Bước cao lên.',
         alert: '🪜 Bậc thang phía trước, cách 1.5m!'
       },
       {
         obstacles: [
-          { name: 'Người đi bộ', distance: '4 mét', direction: 'đi ngược chiều', type: 'warning',
-            box: { top: '15%', left: '40%', width: '65px', height: '170px' } }
+          {
+            name: 'Người đi bộ', distance: '4 mét', direction: 'đi ngược chiều', type: 'warning',
+            box: { top: '15%', left: '40%', width: '65px', height: '170px' }
+          }
         ],
         speech: 'Có người đi bộ ngược chiều, cách 4 mét. Đi sát lề phải.',
         alert: '🚶 Người đi bộ phía trước, cách 4m'
       },
       {
         obstacles: [
-          { name: 'Hố ga mở', distance: '1 mét', direction: 'ngay trước mặt', type: 'danger',
-            box: { top: '65%', left: '35%', width: '100px', height: '60px' } }
+          {
+            name: 'Hố ga mở', distance: '1 mét', direction: 'ngay trước mặt', type: 'danger',
+            box: { top: '65%', left: '35%', width: '100px', height: '60px' }
+          }
         ],
         speech: 'NGUY HIỂM! Hố ga mở ngay trước mặt, cách 1 mét! Dừng lại và đi vòng sang phải!',
         alert: '🚫 HỐ GA MỞ ngay trước mặt — DỪNG LẠI!'
@@ -215,26 +225,34 @@ const UserApp = {
       },
       {
         obstacles: [
-          { name: 'Cành cây thấp', distance: '2 mét', direction: 'phía trên đầu', type: 'warning',
-            box: { top: '2%', left: '20%', width: '200px', height: '45px' } }
+          {
+            name: 'Cành cây thấp', distance: '2 mét', direction: 'phía trên đầu', type: 'warning',
+            box: { top: '2%', left: '20%', width: '200px', height: '45px' }
+          }
         ],
         speech: 'Cành cây thấp phía trên đầu, cách 2 mét. Cúi đầu xuống khi đi qua.',
         alert: '🌳 Cành cây thấp phía trên — Cúi đầu!'
       },
       {
         obstacles: [
-          { name: 'Ghế đá', distance: '2.5 mét', direction: 'bên phải', type: 'safe',
-            box: { top: '50%', left: '68%', width: '110px', height: '70px' } },
-          { name: 'Biển báo', distance: '3 mét', direction: 'bên phải', type: 'safe',
-            box: { top: '10%', left: '75%', width: '50px', height: '80px' } }
+          {
+            name: 'Ghế đá', distance: '2.5 mét', direction: 'bên phải', type: 'safe',
+            box: { top: '50%', left: '68%', width: '110px', height: '70px' }
+          },
+          {
+            name: 'Biển báo', distance: '3 mét', direction: 'bên phải', type: 'safe',
+            box: { top: '10%', left: '75%', width: '50px', height: '80px' }
+          }
         ],
         speech: 'Ghế đá và biển báo bên phải đường. Đường bên trái thông thoáng.',
         alert: 'ℹ️ Ghế đá + Biển báo bên phải'
       },
       {
         obstacles: [
-          { name: 'Đèn đỏ', distance: '5 mét', direction: 'ngã tư phía trước', type: 'danger',
-            box: { top: '5%', left: '45%', width: '40px', height: '60px' } }
+          {
+            name: 'Đèn đỏ', distance: '5 mét', direction: 'ngã tư phía trước', type: 'danger',
+            box: { top: '5%', left: '45%', width: '40px', height: '60px' }
+          }
         ],
         speech: 'Ngã tư phía trước. Đèn đang đỏ. Dừng lại và chờ đèn xanh.',
         alert: '🔴 Đèn đỏ — Dừng lại chờ đèn xanh!'
@@ -325,7 +343,7 @@ const UserApp = {
       const lat = position.coords.latitude;
       const lng = position.coords.longitude;
       const heading = position.coords.heading || 0;
-      
+
       // Giả lập reverse geocoding đơn giản vì không có API Key, 
       // Nhưng trên thực tế có thể dùng Nominatim API (OpenStreetMap) miễn phí.
       let addressStr = `Tọa độ: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
@@ -361,8 +379,8 @@ const UserApp = {
     };
 
     this.navInterval = navigator.geolocation.watchPosition(
-      successCallback, 
-      errorCallback, 
+      successCallback,
+      errorCallback,
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   },
@@ -374,8 +392,8 @@ const UserApp = {
     if (this.isRecording) return;
     try {
       const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : 
-                       (MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm');
+      const mimeType = MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' :
+        (MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm');
       this.mediaRecorder = new MediaRecorder(audioStream, { mimeType: mimeType || undefined });
       this.recordedChunks = [];
 
@@ -420,15 +438,15 @@ const UserApp = {
 
   stopRecording() {
     if (!this.isRecording || !this.mediaRecorder) return;
-    
+
     try {
       if (this.mediaRecorder.state !== 'inactive') {
         this.mediaRecorder.stop();
       }
-    } catch(e) {
+    } catch (e) {
       console.warn('Stop recording error:', e);
     }
-    
+
     this.isRecording = false;
 
     const overlay = document.getElementById('recording-overlay');
@@ -484,7 +502,7 @@ const UserApp = {
   onMessageReceived(msg) {
     // Vibrate mạnh
     if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 100]);
-    
+
     // Âm thông báo
     if (typeof AudioManager !== 'undefined') AudioManager.playNotification('info');
 
@@ -519,7 +537,7 @@ const UserApp = {
     if (typeof AudioManager !== 'undefined') AudioManager.playNotification('info');
 
     this.showMessageToast(data.sender || 'Con Lan', 'Gửi tin nhắn thoại');
-    
+
     // Thông báo bằng TTS
     this.speak(`Tin nhắn thoại từ ${data.sender || 'người thân'}. Đang phát.`);
 
@@ -727,10 +745,10 @@ const UserApp = {
   onCallStateChange(state) {
     const statusEl = document.getElementById('call-status-text');
     console.log('📞 User call state:', state);
-    
+
     switch (state) {
-      case 'calling': 
-        if (statusEl) statusEl.textContent = 'Đang gọi...'; 
+      case 'calling':
+        if (statusEl) statusEl.textContent = 'Đang gọi...';
         break;
       case 'ringing':
         if (statusEl) statusEl.textContent = 'Đang đổ chuông...';
@@ -876,44 +894,14 @@ const UserApp = {
     document.addEventListener('keydown', (e) => {
       if (e.key === 'AudioVolumeUp' || e.keyCode === 175 || e.key === 'AudioVolumeDown' || e.keyCode === 174) {
         e.preventDefault();
-        this.callFamily();
+        this.toggleRecording();
+      }
+      // Volume Down → SOS
+      if (e.key === 'AudioVolumeDown' || e.keyCode === 174) {
+        e.preventDefault();
+        if (!this.sosActive) this.triggerSOS();
       }
     });
-
-    // 2. Dành cho iOS / iPhone và các trình duyệt di động
-    // Tạo một audio vô hình phát im lặng liên tục để đảm bảo `volumechange` luôn hoạt động trên mobile
-    const silentAudio = document.createElement('audio');
-    silentAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
-    silentAudio.loop = true;
-    
-    // Bắt đầu phát khi người dùng tương tác lần đầu
-    const playSilentAudio = () => {
-      silentAudio.play().catch(e => console.warn('Silent audio play blocked:', e));
-      document.removeEventListener('touchstart', playSilentAudio);
-      document.removeEventListener('click', playSilentAudio);
-    };
-    document.addEventListener('touchstart', playSilentAudio);
-    document.addEventListener('click', playSilentAudio);
-
-    let lastVolume = 1;
-    let callTriggered = false;
-    
-    const handleVolumeChange = () => {
-      if (callTriggered) return; // Prevent multiple calls
-      console.log('📱 Khóa âm lượng được nhấn -> Gọi người thân!');
-      this.callFamily();
-      callTriggered = true;
-      setTimeout(() => { callTriggered = false; }, 3000); // Debounce 3 seconds
-    };
-
-    const videoEl = document.getElementById('camera-video');
-    if (videoEl) {
-      videoEl.addEventListener('volumechange', handleVolumeChange);
-    }
-    
-    // Thêm listener trên window và audio
-    window.addEventListener('volumechange', handleVolumeChange);
-    silentAudio.addEventListener('volumechange', handleVolumeChange);
   },
 
   /**
@@ -923,7 +911,7 @@ const UserApp = {
    */
   setupTouchRecording() {
     const recordBtn = document.getElementById('record-btn');
-    
+
     if (recordBtn) {
       let holdTimer = null;
       let isHolding = false;
@@ -961,9 +949,9 @@ const UserApp = {
     // Double-tap anywhere (ngoại trừ buttons) → toggle recording
     document.addEventListener('touchend', (e) => {
       // Bỏ qua nếu tap vào button hoặc overlay
-      if (e.target.closest('button') || e.target.closest('.recording-overlay') || 
-          e.target.closest('.sos-overlay') || e.target.closest('.call-overlay') ||
-          e.target.closest('.incoming-call') || e.target.closest('.messages-panel')) {
+      if (e.target.closest('button') || e.target.closest('.recording-overlay') ||
+        e.target.closest('.sos-overlay') || e.target.closest('.call-overlay') ||
+        e.target.closest('.incoming-call') || e.target.closest('.messages-panel')) {
         return;
       }
 

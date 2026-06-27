@@ -18,7 +18,7 @@ const BlindNavRTC = {
   callState: 'idle', // idle | calling | ringing | connected | ended
   callTimer: null,
   callDuration: 0,
-  
+
   // Fake SDP needed to bypass old BlindNavRTC._incomingOfferSdp checks
   _incomingOfferSdp: 'peerjs-mock-sdp',
 
@@ -39,7 +39,7 @@ const BlindNavRTC = {
     // Sử dụng ID duy nhất để tránh đụng độ trên server PeerJS công cộng
     this.myId = role === 'user' ? 'ss-blindnav-user-p1703' : 'ss-blindnav-family-p1703';
     this.targetId = role === 'user' ? 'ss-blindnav-family-p1703' : 'ss-blindnav-user-p1703';
-    
+
     // Tạo đối tượng PeerJS
     this.peer = new Peer(this.myId, {
       debug: 1
@@ -88,7 +88,7 @@ const BlindNavRTC = {
 
   connectToTarget() {
     if (this.conn && this.conn.open) return;
-    
+
     // Chỉ tạo mới nếu chưa có conn hoặc conn đã đóng
     console.log(`🔄 Attempting to connect to ${this.targetId}...`);
     const conn = this.peer.connect(this.targetId, { reliable: true });
@@ -100,7 +100,7 @@ const BlindNavRTC = {
     if (this.conn && this.conn.open && this.conn.peer === conn.peer) return;
 
     this.conn = conn;
-    
+
     this.conn.on('open', () => {
       console.log(`✅ Data connection established with ${this.targetId}`);
       this.send({ type: 'presence', role: this.role, status: 'online' });
@@ -189,28 +189,34 @@ const BlindNavRTC = {
       if (existingStream) {
         this.localStream = existingStream;
       } else {
-        const videoConstraints = this.role === 'user' ? { facingMode: 'environment' } : true;
-        try {
-          this.localStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: true });
-        } catch (e) {
-          // Fallback to any camera if environment camera is not available
-          this.localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        }
+        this.localStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true
+        });
       }
 
-      this.callObj = this.peer.call(this.targetId, this.localStream);
-      
-      this.callObj.on('stream', (remoteStream) => {
-        if (this.onRemoteStream) this.onRemoteStream(remoteStream);
-        if (this.callState !== 'connected') {
-          this._setCallState('connected');
-          this._startCallTimer();
-        }
+      // Tạo peer connection
+      this._createPeerConnection();
+
+      // Thêm tracks
+      this.localStream.getTracks().forEach(track => {
+        this.peerConnection.addTrack(track, this.localStream);
       });
 
-      this.callObj.on('close', () => this._handleHangup());
-      
-      console.log('📞 Call initiated via PeerJS');
+      // Tạo offer
+      const offer = await this.peerConnection.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true
+      });
+      await this.peerConnection.setLocalDescription(offer);
+
+      // Gửi offer cho tab kia
+      this.send({
+        type: 'call-offer',
+        sdp: offer.sdp
+      });
+
+      console.log('📞 Call offer sent');
     } catch (err) {
       console.error('❌ Start call error:', err);
       this._setCallState('ended');
@@ -221,28 +227,50 @@ const BlindNavRTC = {
    * Trả lời cuộc gọi (người nhận)
    */
   async answerCall(offerSdp) {
-    // offerSdp không cần cho PeerJS (chỉ tương thích UI cũ)
     try {
-      const videoConstraints = this.role === 'user' ? { facingMode: 'environment' } : true;
-      try {
-        this.localStream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: true });
-      } catch (e) {
-        this.localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      }
+      // Lấy stream
+      this.localStream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true
+      });
 
-      if (this.callObj) {
-        this.callObj.answer(this.localStream);
-        
-        this.callObj.on('stream', (remoteStream) => {
-          if (this.onRemoteStream) this.onRemoteStream(remoteStream);
-        });
+      // Tạo peer connection
+      this._createPeerConnection();
 
-        this.callObj.on('close', () => this._handleHangup());
-        
-        this._setCallState('connected');
-        this._startCallTimer();
-        console.log('✅ Call answered via PeerJS');
+      // Thêm tracks
+      this.localStream.getTracks().forEach(track => {
+        this.peerConnection.addTrack(track, this.localStream);
+      });
+
+      // Set remote description (offer)
+      await this.peerConnection.setRemoteDescription(
+        new RTCSessionDescription({ type: 'offer', sdp: offerSdp })
+      );
+
+      // Thêm pending ICE candidates
+      for (const candidate of this.pendingCandidates) {
+        try {
+          await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (e) {
+          console.warn('Failed to add pending ICE candidate:', e);
+        }
       }
+      this.pendingCandidates = [];
+
+      // Tạo answer
+      const answer = await this.peerConnection.createAnswer();
+      await this.peerConnection.setLocalDescription(answer);
+
+      // Gửi answer
+      this.send({
+        type: 'call-answer',
+        sdp: answer.sdp
+      });
+
+      this._setCallState('connected');
+      this._startCallTimer();
+
+      console.log('✅ Call answered');
     } catch (err) {
       console.error('❌ Answer call error:', err);
       this._setCallState('ended');
@@ -262,7 +290,7 @@ const BlindNavRTC = {
       this.callObj.close();
       this.callObj = null;
     }
-    
+
     // Nếu là người thân, tắt camera (người mù có thể giữ camera để gửi feed)
     if (this.localStream && this.role === 'family') {
       this.localStream.getTracks().forEach(t => t.stop());
@@ -284,17 +312,17 @@ const BlindNavRTC = {
    */
   async shareCameraFeed(cameraStream) {
     if (!this.peer || this.peer.disconnected) return;
-    
+
     try {
       if (this.cameraCallObj) {
         this.cameraCallObj.close();
       }
-      
+
       // Gọi cho người thân, kèm metadata định danh đây là luồng camera
       this.cameraCallObj = this.peer.call(this.targetId, cameraStream, {
         metadata: { type: 'camera' }
       });
-      
+
       console.log('📹 Camera feed shared to family via PeerJS');
     } catch (err) {
       console.error('Camera share error:', err);
