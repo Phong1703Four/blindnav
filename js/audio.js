@@ -217,39 +217,49 @@ const AudioManager = {
         // Volume
         audio.volume = ((typeof BlindNavData !== 'undefined' ? BlindNavData?.settings?.voice?.volume : 80) || 80) / 100;
 
+        let resolved = false;
+
         audio.onended = () => {
+          if (resolved) return;
+          resolved = true;
           this._ttsPlaying = false;
           this._currentTtsAudio = null;
-          // Phát đoạn tiếp theo (nếu có), delay nhỏ cho tự nhiên
           setTimeout(() => this._playNextTts(), 150);
           resolve(true);
         };
 
         audio.onerror = () => {
-          console.warn('Google TTS error, will fallback');
+          if (resolved) return;
+          resolved = true;
+          console.warn('Google TTS error (CORS or network), will fallback');
           this._currentTtsAudio = null;
           resolve(false);
         };
 
-        // Set source và phát
+        // Bắt lỗi khi không thể play do Autoplay Policy
         audio.src = url;
         const playPromise = audio.play();
         
         if (playPromise !== undefined) {
-          playPromise.catch(() => {
-            // Autoplay bị chặn hoặc CORS error
+          playPromise.catch((e) => {
+            if (resolved) return;
+            resolved = true;
+            console.warn('Google TTS Autoplay blocked or failed:', e);
             this._currentTtsAudio = null;
             resolve(false);
           });
         }
 
-        // Timeout: nếu sau 5s không bắt đầu phát, fallback
+        // Timeout: nếu sau 3s không phát được, fallback luôn
         setTimeout(() => {
+          if (resolved) return;
           if (audio.paused && audio.currentTime === 0) {
+            resolved = true;
+            console.warn('Google TTS timed out, fallback to SpeechSynthesis');
             this._currentTtsAudio = null;
             resolve(false);
           }
-        }, 5000);
+        }, 3000);
 
       } catch (e) {
         console.warn('Google TTS exception:', e);

@@ -235,18 +235,8 @@ const App = {
 
   // ── Glasses Simulation ──
   startGlassesSimulation() {
-    setInterval(() => {
-      const loc = BlindNavData.glasses.location;
-      loc.lat += (Math.random() - 0.5) * 0.0002;
-      loc.lng += (Math.random() - 0.5) * 0.0002;
-      loc.timestamp = Date.now();
-      if (BlindNavData.glasses.status.battery > 5) {
-        BlindNavData.glasses.status.battery -= 0.02;
-      }
-      if (this.currentTab === 'tracking' && typeof TrackingScreen !== 'undefined') {
-        TrackingScreen.updatePosition(loc);
-      }
-    }, 5000);
+    // Đã gỡ bỏ mô phỏng GPS chạy ngẫu nhiên.
+    // Chờ nhận toạ độ thật từ điện thoại người mù qua WebRTC.
   },
 
   // ── SOS Alert ──
